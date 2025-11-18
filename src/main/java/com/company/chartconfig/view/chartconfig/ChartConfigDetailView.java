@@ -6,17 +6,18 @@ import com.company.chartconfig.service.ChartConfigService;
 import com.company.chartconfig.view.main.MainView;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import io.jmix.chartsflowui.component.Chart;
+import io.jmix.chartsflowui.data.item.MapDataItem;
 import io.jmix.core.DataManager;
 import io.jmix.core.FetchPlans;
 import io.jmix.flowui.Notifications;
+import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -28,7 +29,6 @@ import java.util.List;
 @EditedEntityContainer("chartConfigDc")
 public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
 
-    private static final Logger log = LoggerFactory.getLogger(ChartConfigDetailView.class);
     @Autowired
     private ChartConfigService chartConfigService;
     @Autowired
@@ -37,6 +37,8 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
     private DataManager dataManager;
     @Autowired
     private FetchPlans fetchPlans;
+    @Autowired
+    private UiComponents uiComponents;   // <-- BẮT BUỘC
 
     @ViewComponent
     private EntityPicker<Dataset> datasetField;
@@ -45,14 +47,19 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
     @ViewComponent
     private JmixComboBox<String> yAxisField;
     @ViewComponent
-    private Chart chart;
+    private VerticalLayout chartContainer;
 
+    // -------------------------------------------------------------
+    // Load columns khi chọn Dataset
+    // -------------------------------------------------------------
     @Subscribe("datasetField")
     public void onDatasetFieldComponentValueChange(
             AbstractField.ComponentValueChangeEvent<EntityPicker<Dataset>, Dataset> event) {
 
         Dataset selectedDataset = event.getValue();
         if (selectedDataset == null) {
+            xAxisField.clear();
+            yAxisField.clear();
             xAxisField.setItems(new ArrayList<>());
             yAxisField.setItems(new ArrayList<>());
             return;
@@ -84,9 +91,13 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
         }
     }
 
-
+    // -------------------------------------------------------------
+    // Render Chart bằng Java
+    // -------------------------------------------------------------
     @Subscribe(id = "renderChartBtn", subject = "clickListener")
     public void onRenderChartBtnClick(ClickEvent<JmixButton> event) {
+
+        ChartConfig chartConfig = getEditedEntity();
         Dataset selected = datasetField.getValue();
 
         if (selected == null) {
@@ -94,6 +105,7 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
             return;
         }
 
+        // Reload dataset mới nhất
         Dataset dataset = dataManager.load(Dataset.class)
                 .id(selected.getId())
                 .fetchPlan(fetchPlans.builder(Dataset.class)
@@ -101,24 +113,40 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
                         .build())
                 .one();
 
-        if (xAxisField.getValue() == null || yAxisField.getValue() == null) {
-            notifications.create("⚠ Chọn X và Y Axis!").show();
+        String xField = xAxisField.getValue();
+        String yField = yAxisField.getValue();
+
+        if (xField == null || yField == null) {
+            notifications.create("⚠ Chọn X Axis và Y Axis!").show();
             return;
         }
 
         try {
-            chartConfigService.renderBarChart(
-                    chart,
-                    dataset,
-                    xAxisField.getValue(),
-                    yAxisField.getValue()
-            );
+            // Parse rawJson -> List<MapDataItem>
+            List<MapDataItem> items = chartConfigService.buildItems(dataset, xField, yField);
 
-            notifications.create("🚀 Render thành công!").show();
+            // Clear container
+            chartContainer.removeAll();
+
+            Chart chart = null;
+
+            // Tạo chart đúng type
+            if ("BAR".equalsIgnoreCase(chartConfig.getChartType())) {
+                chart = chartConfigService.createBarChart(xField, yField, items);
+            }
+
+            if (chart == null) {
+                notifications.create("⚠ Chart Type chưa hỗ trợ!").show();
+                return;
+            }
+
+            // Add vào UI
+            chartContainer.add(chart);
+
+            notifications.create("🚀 Render Chart thành công!").show();
 
         } catch (Exception e) {
             notifications.create("❌ Lỗi render chart: " + e.getMessage()).show();
         }
     }
-
 }
