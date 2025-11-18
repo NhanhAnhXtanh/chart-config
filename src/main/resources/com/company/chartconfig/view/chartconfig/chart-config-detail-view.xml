@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      xmlns:charts="http://jmix.io/schema/charts/ui"
+      title="msg://chartConfigDetailView.title"
+      focusComponent="form">
+    <data>
+        <instance id="chartConfigDc"
+                  class="com.company.chartconfig.entity.ChartConfig">
+            <fetchPlan extends="_base">
+                <property name="dataset" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="chartConfigDl"/>
+        </instance>
+
+        <collection id="datasetsDc" class="com.company.chartconfig.entity.Dataset">
+            <loader id="datasetsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from Dataset e]]>
+                </query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <actions>
+        <action id="saveCloseAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <layout>
+        <formLayout id="form" dataContainer="chartConfigDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+
+            <textField id="nameField" property="name"/>
+            <textField id="chartTypeField" property="chartType"/>
+
+            <entityPicker id="datasetField" property="dataset" label="Dataset">
+                <actions>
+                    <action id="entityLookupAction" type="entity_lookup"/>
+                    <action id="entityClearAction" type="entity_clear"/>
+                </actions>
+            </entityPicker>
+
+            <comboBox id="xAxisField" property="xAxis" label="X Axis"/>
+            <comboBox id="yAxisField" property="yAxis" label="Y Axis"/>
+        </formLayout>
+
+        <hbox id="detailActions">
+            <button id="saveAndCloseButton" action="saveCloseAction"/>
+            <button id="closeButton" action="closeAction"/>
+            <button id="renderChartBtn" text="Render Chart"/>
+        </hbox>
+
+        <charts:chart id="chart"
+                      width="100%"
+                      height="420px">
+            <charts:xAxes>
+                <charts:xAxis/>
+            </charts:xAxes>
+            <charts:yAxes>
+                <charts:yAxis/>
+            </charts:yAxes>
+        </charts:chart>
+
+    </layout>
+</view>

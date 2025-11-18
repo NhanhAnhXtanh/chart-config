@@ -3,6 +3,8 @@
 
     <menu id="application" title="msg://com.company.chartconfig/menu.application.title" opened="true">
         <item view="User.list" title="msg://com.company.chartconfig.view.user/UserListView.title"/>
+        <item view="Dataset.list" title="msg://com.company.chartconfig.view.dataset/datasetListView.title"/>
+        <item view="ChartConfig.list" title="msg://com.company.chartconfig.view.chartconfig/chartConfigListView.title"/>
     </menu>
 
 </menu-config>
