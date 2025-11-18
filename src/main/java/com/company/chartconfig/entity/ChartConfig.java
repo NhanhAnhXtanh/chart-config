@@ -1,16 +1,10 @@
 package com.company.chartconfig.entity;
 
+import com.company.chartconfig.enums.ChartType;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
@@ -27,23 +21,30 @@ public class ChartConfig {
 
     @InstanceName
     @NotNull
-    @Column(name = "NAME", nullable = false, length = 255)
+    @Column(name = "NAME", nullable = false)
     private String name;
 
     @NotNull
-    @Column(name = "CHART_TYPE", nullable = false, length = 50)
-    private String chartType = "BAR";
+    @Column(name = "CHART_TYPE", nullable = false)
+    private String chartType;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "DATASET_ID", nullable = false)
     private Dataset dataset;
 
-    @Column(name = "X_AXIS", length = 255)
-    private String xAxis;
+    @Lob
+    @Column(name = "SETTINGS_JSON")
+    private String settingsJson;
 
-    @Column(name = "Y_AXIS", length = 255)
-    private String yAxis;
+
+    public void setChartType(ChartType chartType) {
+        this.chartType = chartType == null ? null : chartType.getId();
+    }
+
+    public ChartType getChartType() {
+        return chartType == null ? null : ChartType.fromId(chartType);
+    }
 
     // -------- getters & setters ----------
 
@@ -63,14 +64,6 @@ public class ChartConfig {
         this.name = name;
     }
 
-    public String getChartType() {
-        return chartType;
-    }
-
-    public void setChartType(String chartType) {
-        this.chartType = chartType;
-    }
-
     public Dataset getDataset() {
         return dataset;
     }
@@ -79,19 +72,11 @@ public class ChartConfig {
         this.dataset = dataset;
     }
 
-    public String getXAxis() {
-        return xAxis;
+    public String getSettingsJson() {
+        return settingsJson;
     }
 
-    public void setXAxis(String xAxis) {
-        this.xAxis = xAxis;
-    }
-
-    public String getYAxis() {
-        return yAxis;
-    }
-
-    public void setYAxis(String yAxis) {
-        this.yAxis = yAxis;
+    public void setSettingsJson(String settingsJson) {
+        this.settingsJson = settingsJson;
     }
 }

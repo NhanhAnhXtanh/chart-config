@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      xmlns:charts="http://jmix.io/schema/charts/ui"
-      title="msg://chartConfigDetailView.title"
+      title="Chart Config Detail"
       focusComponent="form">
+
     <data>
         <instance id="chartConfigDc"
                   class="com.company.chartconfig.entity.ChartConfig">
@@ -12,50 +12,63 @@
             <loader id="chartConfigDl"/>
         </instance>
 
-        <collection id="datasetsDc" class="com.company.chartconfig.entity.Dataset">
+        <collection id="datasetsDc"
+                    class="com.company.chartconfig.entity.Dataset">
             <loader id="datasetsDl" readOnly="true">
-                <query>
-                    <![CDATA[select e from Dataset e]]>
-                </query>
+                <query><![CDATA[select e from Dataset e]]></query>
             </loader>
             <fetchPlan extends="_base"/>
         </collection>
     </data>
+
     <facets>
         <dataLoadCoordinator auto="true"/>
     </facets>
+
     <actions>
         <action id="saveCloseAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
+
     <layout>
         <formLayout id="form" dataContainer="chartConfigDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
-
             <textField id="nameField" property="name"/>
-            <textField id="chartTypeField" property="chartType"/>
 
-            <entityPicker id="datasetField" property="dataset" label="Dataset">
+            <!-- enumComboBox -->
+            <comboBox id="chartTypeField"
+                      property="chartType"
+                      datatype="enum"
+                      label="Chart Type"/>
+
+            <!-- Pick dataset -->
+            <entityPicker id="datasetField"
+                          property="dataset"
+                          label="Dataset">
                 <actions>
                     <action id="entityLookupAction" type="entity_lookup"/>
                     <action id="entityClearAction" type="entity_clear"/>
                 </actions>
             </entityPicker>
 
-            <comboBox id="xAxisField" property="xAxis" label="X Axis"/>
-            <comboBox id="yAxisField" property="yAxis" label="Y Axis"/>
+            <!-- JSON settings (hidden) -->
+            <textArea id="settingsJsonField"
+                      property="settingsJson"
+                      visible="false"/>
         </formLayout>
 
-        <hbox id="detailActions">
-            <button id="saveAndCloseButton" action="saveCloseAction"/>
-            <button id="closeButton" action="closeAction"/>
+        <!-- Dynamic UI -->
+        <vbox id="settingsBox" width="100%"/>
+
+        <hbox id="actions">
+            <button id="saveAndCloseBtn" action="saveCloseAction"/>
+            <button id="closeBtn" action="closeAction"/>
             <button id="renderChartBtn" text="Render Chart"/>
         </hbox>
 
         <vbox id="chartContainer" width="100%" height="100%"/>
-
     </layout>
 </view>

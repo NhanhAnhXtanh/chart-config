@@ -10,6 +10,7 @@ import io.jmix.chartsflowui.kit.component.model.axis.AxisType;
 import io.jmix.chartsflowui.kit.component.model.axis.XAxis;
 import io.jmix.chartsflowui.kit.component.model.axis.YAxis;
 import io.jmix.chartsflowui.kit.component.model.series.BarSeries;
+import io.jmix.chartsflowui.kit.component.model.series.PieSeries;
 import io.jmix.chartsflowui.kit.component.model.series.SeriesType;
 import io.jmix.chartsflowui.kit.data.chart.ListChartItems;
 import io.jmix.flowui.UiComponents;
@@ -133,5 +134,31 @@ public class ChartConfigService {
 
         return chart;
     }
+
+    public Chart createPieChart(String labelField, String valueField, List<MapDataItem> items) {
+
+        Chart chart = uiComponents.create(Chart.class);
+        chart.setWidth("100%");
+        chart.setHeight("450px");
+
+        DataSet dataSet = new DataSet()
+                .withSource(
+                        new DataSet.Source<MapDataItem>()
+                                .withDataProvider(new ListChartItems<>(items))
+                                .withCategoryField(labelField)
+                                .withValueField(valueField)
+                );
+
+        chart.setDataSet(dataSet);
+
+        PieSeries series = new PieSeries();
+        series.setType(SeriesType.PIE);
+        series.withDatasetIndex(0);
+
+        chart.addSeries(series);
+
+        return chart;
+    }
+
 
 }
