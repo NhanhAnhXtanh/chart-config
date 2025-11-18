@@ -1,81 +1,69 @@
 package com.company.chartconfig.service;
 
-import com.company.chartconfig.entity.Dataset;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.jmix.core.DataManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.jmix.core.entity.KeyValueEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class DatasetService {
+    private final ObjectMapper objectMapper;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private DataManager dataManager;
-
-    /**
-     * Parse rawJson thành schemaJson và trả về Dataset đã cập nhật
-     */
-    public Dataset parseSchema(Dataset dataset) {
-        String rawJson = dataset.getRawJson();
-        if (rawJson == null || rawJson.isBlank()) {
-            throw new IllegalArgumentException("JSON input is empty");
-        }
-
-        try {
-            JsonNode rootNode = objectMapper.readTree(rawJson);
-            if (!rootNode.isArray() || !rootNode.elements().hasNext()) {
-                throw new IllegalArgumentException("JSON must be an array of objects, e.g. [ { ... } ]");
-            }
-
-            ArrayNode arrayNode = (ArrayNode) rootNode;
-            JsonNode firstItem = arrayNode.get(0);
-            if (!firstItem.isObject()) {
-                throw new IllegalArgumentException("Array elements must be JSON objects");
-            }
-
-            ArrayNode schemaArray = objectMapper.createArrayNode();
-            Iterator<Map.Entry<String, JsonNode>> fields = firstItem.fields();
-
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
-                ObjectNode schemaItem = objectMapper.createObjectNode();
-                schemaItem.put("name", entry.getKey());
-                schemaItem.put("type", detectType(entry.getValue()));
-                schemaArray.add(schemaItem);
-            }
-
-            dataset.setSchemaJson(objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(schemaArray));
-            return dataset;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid JSON: " + e.getMessage(), e);
-        }
+    public DatasetService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     /**
-     * Save Dataset
+     * Parse raw JSON and return:
+     * - schemaJson string
+     * - List<KeyValueEntity> rows for UI Grid
      */
-    public Dataset save(Dataset dataset) {
-        return dataManager.save(dataset);
+    public ParsedSchemaResult parseSchema(String rawJson) throws Exception {
+
+        JsonNode rootNode = objectMapper.readTree(rawJson);
+
+        if (!rootNode.isArray() || !rootNode.elements().hasNext()) {
+            throw new IllegalArgumentException("JSON must be an array of objects");
+        }
+
+        JsonNode firstObject = rootNode.get(0);
+        if (!firstObject.isObject()) {
+            throw new IllegalArgumentException("JSON array elements must be objects");
+        }
+
+        List<Map<String, Object>> schemaList = new ArrayList<>();
+        List<KeyValueEntity> rows = new ArrayList<>();
+
+        firstObject.fields().forEachRemaining(f -> {
+            String name = f.getKey();
+            String type = detectType(f.getValue());
+
+            schemaList.add(Map.of("name", name, "type", type));
+
+            KeyValueEntity kv = new KeyValueEntity();
+            kv.setValue("name", name);
+            kv.setValue("type", type);
+            rows.add(kv);
+        });
+
+        String schemaJson = objectMapper.writeValueAsString(schemaList);
+
+        return new ParsedSchemaResult(schemaJson, rows);
     }
 
-    private String detectType(JsonNode value) {
-        if (value.isNumber()) return "number";
-        if (value.isTextual()) return "string";
-        if (value.isBoolean()) return "boolean";
-        if (value.isArray()) return "array";
-        if (value.isObject()) return "object";
-        if (value.isNull()) return "null";
-        return "string";
+    private String detectType(JsonNode v) {
+        if (v.isNumber()) return "number";
+        if (v.isTextual()) return "string";
+        if (v.isBoolean()) return "boolean";
+        if (v.isArray()) return "array";
+        if (v.isObject()) return "object";
+        return "unknown";
     }
+
+    public record ParsedSchemaResult(String schemaJson, List<KeyValueEntity> rows) {}
+
 }
