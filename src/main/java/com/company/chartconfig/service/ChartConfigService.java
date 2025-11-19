@@ -57,7 +57,7 @@ public class ChartConfigService {
     // -------------------------------------------------------------
     // 2) Build items từ rawJson -> List<MapDataItem>
     // -------------------------------------------------------------
-    public List<MapDataItem> buildItems(Dataset dataset, String xField, String yField) {
+    public List<MapDataItem> buildItems(Dataset dataset) {
 
         try {
             JsonNode array = objectMapper.readTree(dataset.getRawJson());

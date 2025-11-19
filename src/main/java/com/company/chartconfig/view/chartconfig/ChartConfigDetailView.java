@@ -86,11 +86,15 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
             case BAR -> {
                 field1.setLabel("X Axis");
                 field2.setLabel("Y Axis");
+                field1.setWidth("100%");
+                field2.setWidth("100%");
                 settingsBox.add(field1, field2);
             }
             case PIE -> {
                 field1.setLabel("Label Field");
                 field2.setLabel("Value Field");
+                field1.setWidth("100%");
+                field2.setWidth("100%");
                 settingsBox.add(field1, field2);
             }
         }
@@ -129,7 +133,7 @@ public class ChartConfigDetailView extends StandardDetailView<ChartConfig> {
 
         // Load dataset items
         List<MapDataItem> items =
-                chartService.buildItems(ds, f1, f2);
+                chartService.buildItems(ds);
 
         chartContainer.removeAll();
 

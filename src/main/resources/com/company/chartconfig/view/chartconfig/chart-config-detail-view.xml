@@ -61,7 +61,7 @@
         </formLayout>
 
         <!-- Dynamic UI -->
-        <vbox id="settingsBox" width="100%"/>
+        <vbox id="settingsBox" width="100%" padding="false"/>
 
         <hbox id="actions">
             <button id="saveAndCloseBtn" action="saveCloseAction"/>
