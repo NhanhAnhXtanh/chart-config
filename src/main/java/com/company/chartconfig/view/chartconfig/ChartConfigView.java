@@ -17,6 +17,7 @@ import com.vaadin.flow.router.Route;
 import io.jmix.chartsflowui.component.Chart;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
+import io.jmix.flowui.ViewNavigators;
 import io.jmix.flowui.component.textarea.JmixTextArea;
 import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.kit.component.button.JmixButton;
@@ -58,6 +59,8 @@ public class ChartConfigView extends StandardView {
     @ViewComponent private VerticalLayout chartContainer;
     @ViewComponent private JmixTextArea fieldsArea;
     @ViewComponent private TypedTextField<Object> chartNameField;
+    @Autowired
+    private ViewNavigators viewNavigators;
 
 
     // ===================================================================
@@ -267,5 +270,9 @@ public class ChartConfigView extends StandardView {
         dataManager.save(config);
 
         notifications.create("ChartConfig saved!").show();
+
+        viewNavigators
+                .view(this, ChartConfigListView.class)
+                .navigate();
     }
 }

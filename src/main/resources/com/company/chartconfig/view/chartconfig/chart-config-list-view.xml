@@ -55,8 +55,8 @@
                   columnReorderingAllowed="true">
             <actions>
                 <!-- create/edit là custom action, remove vẫn dùng list_remove -->
-                <action id="createAction"/>
-                <action id="editAction"/>
+                <action id="createAction" text="Create"/>
+                <action id="editAction" text="Edit"/>
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
