@@ -1,19 +1,16 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
-
     <content>
-        <vbox id="root"
-              width="100%"
-              spacing="true"
-              padding="false">
+        <vbox id="root" spacing="10">
 
-            <nativeLabel text="Label field"/>
-            <comboBox id="pieLabelFieldCombo"
-                      width="100%"/>
+            <nativeLabel text="Label Field"/>
+            <div id="labelDropZone" css="border:1px dashed #888; padding:10px; height:40px;">
+                <span id="labelValue"/>
+            </div>
 
-            <nativeLabel text="Value field"/>
-            <comboBox id="pieValueFieldCombo"
-                      width="100%"/>
+            <nativeLabel text="Value Field"/>
+            <div id="valueDropZone" css="border:1px dashed #888; padding:10px; height:40px;">
+                <span id="valueValue"/>
+            </div>
 
         </vbox>
     </content>

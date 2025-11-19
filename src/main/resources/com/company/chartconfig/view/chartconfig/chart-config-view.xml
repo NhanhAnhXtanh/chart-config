@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
       title="msg://chartConfigView.title">
 
@@ -7,15 +7,19 @@
     </actions>
 
     <layout>
+
+        <!-- TOP toolbar -->
         <hbox width="100%">
             <textField id="chartNameField" placeholder="Tên chart"/>
-            <button id="save" text="Save" alignSelf="END"/>
+            <button id="save" text="Save"/>
         </hbox>
 
         <hbox width="100%" height="100%">
-            <!-- SPLIT 1: Dataset + fields -->
             <split width="100%">
+
                 <split width="40%">
+
+                    <!-- LEFT PANE -->
                     <vbox id="leftPane" width="25%" padding="true" spacing="true">
                         <nativeLabel text="Dataset"/>
                         <nativeLabel id="datasetNameLabel"/>
@@ -23,21 +27,23 @@
                         <nativeLabel text="Chart type"/>
                         <nativeLabel id="chartTypeLabel"/>
 
-                        <nativeLabel text="Fields"/>
-                        <textArea id="fieldsArea"
-                                  width="100%"
-                                  height="300px" readOnly="true"/>
+                        <nativeLabel text="Fields (Drag vào X/Y)"/>
+                        <vbox id="fieldsList" spacing="5"/>
                     </vbox>
 
-                    <!-- SPLIT 2: Chart config -->
+
+                    <!-- MIDDLE PANE -->
                     <vbox id="middlePane" width="25%" padding="true" spacing="true">
 
                         <nativeLabel text="Chart configuration"/>
 
-                        <fragment id="barConfig" class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
-                        <fragment id="pieConfig" class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
+                        <fragment id="barConfig"
+                                  class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
 
-                        <hbox spacing="true">
+                        <fragment id="pieConfig"
+                                  class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
+
+                        <hbox spacing="10">
                             <button id="previewBtn" text="Preview"/>
                             <button id="closeBtn" action="closeAction"/>
                         </hbox>
@@ -46,14 +52,14 @@
 
                 </split>
 
-                <!-- SPLIT 3: Chart preview -->
+                <!-- RIGHT PANE -->
                 <vbox id="rightPane" width="50%" padding="true" spacing="true">
-                    <nativeLabel text="Preview" width="90%"/>
-                    <vbox id="chartContainer"
-                          width="100%"
-                          height="100%"/>
+                    <nativeLabel text="Preview"/>
+                    <vbox id="chartContainer" width="100%" height="100%"/>
                 </vbox>
+
             </split>
         </hbox>
+
     </layout>
 </view>

@@ -1,20 +1,21 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
-
     <content>
-        <vbox id="root"
-              width="100%"
-              spacing="true"
-              padding="false">
+        <vbox id="root" spacing="true" css="align-items:start; gap:12px;">
+            <span text="X Axis" css="font-weight:500; color:#444;"/>
+            <div id="xDropZone"
+                 css="width:220px; height:50px; border:2px dashed #b0bec5;
+                        border-radius:8px; display:flex; align-items:center; justify-content:center;
+                        background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
+                <span></span>
+            </div>
 
-            <nativeLabel text="X field"/>
-            <comboBox id="barXFieldCombo"
-                      width="100%"/>
-
-            <nativeLabel text="Y field"/>
-            <comboBox id="barYFieldCombo"
-                      width="100%"/>
-
+            <span text="Y Axis" css="font-weight:500; color:#444;"/>
+            <div id="yDropZone"
+                 css="width:220px; height:50px; border:2px dashed #b0bec5;
+                        border-radius:8px; display:flex; align-items:center; justify-content:center;
+                        background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
+                <span></span>
+            </div>
         </vbox>
     </content>
 </fragment>
