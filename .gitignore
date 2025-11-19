@@ -29,3 +29,29 @@ vite.generated.ts
 webpack.generated.js
 
 .DS_Store
+
+# ==== GENERATED FILES (KHÔNG COMMIT) ====
+JmixDataStore/src/main/frontend/generated/
+JmixDataStore/src/main/resources/themes/**/generated/
+
+# ==== Node and frontend ====
+node_modules/
+dist/
+build/
+pnpm-lock.yaml
+package-lock.json
+
+# ==== Gradle/Maven ====
+target/
+build/
+.gradle/
+
+# ==== IDE ====
+.idea/
+.vscode/
+*.iml
+
+# ==== System ====
+*.log
+*.tmp
+

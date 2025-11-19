@@ -4,7 +4,9 @@ import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
+import com.company.chartconfig.view.barconfigfragment.BarConfigFragment;
 import com.company.chartconfig.view.main.MainView;
+import com.company.chartconfig.view.pieconfigfragment.PieConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -15,7 +17,6 @@ import com.vaadin.flow.router.Route;
 import io.jmix.chartsflowui.component.Chart;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
-import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.textarea.JmixTextArea;
 import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.kit.component.button.JmixButton;
@@ -38,49 +39,32 @@ public class ChartConfigView extends StandardView {
     private Dataset dataset;
     private List<String> fieldNames = new ArrayList<>();
 
-    // nếu != null -> đang edit ChartConfig
     private ChartConfig editingConfig;
 
-    @Autowired
-    private DataManager dataManager;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private Notifications notifications;
-    @Autowired
-    private ChartConfigService chartConfigService;
+    @Autowired private DataManager dataManager;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private Notifications notifications;
+    @Autowired private ChartConfigService chartConfigService;
 
-    // SPLIT 1
-    @ViewComponent
-    private NativeLabel datasetNameLabel;
-    @ViewComponent
-    private NativeLabel chartTypeLabel;
+    // LEFT PANEL
+    @ViewComponent private NativeLabel datasetNameLabel;
+    @ViewComponent private NativeLabel chartTypeLabel;
 
-    // SPLIT 2
-    @ViewComponent
-    private VerticalLayout barConfigBox;
-    @ViewComponent
-    private VerticalLayout pieConfigBox;
-    @ViewComponent
-    private JmixComboBox<String> barXFieldCombo;
-    @ViewComponent
-    private JmixComboBox<String> barYFieldCombo;
-    @ViewComponent
-    private JmixComboBox<String> pieLabelFieldCombo;
-    @ViewComponent
-    private JmixComboBox<String> pieValueFieldCombo;
+    // FRAGMENTS
+    @ViewComponent private BarConfigFragment barConfig;
+    @ViewComponent private PieConfigFragment pieConfig;
 
-    // SPLIT 3
-    @ViewComponent
-    private VerticalLayout chartContainer;
-    @ViewComponent
-    private JmixTextArea fieldsArea;
-    @ViewComponent
-    private TypedTextField<Object> chartNameField;
+    // RIGHT PANEL
+    @ViewComponent private VerticalLayout chartContainer;
+    @ViewComponent private JmixTextArea fieldsArea;
+    @ViewComponent private TypedTextField<Object> chartNameField;
 
-    // ---- MODE CREATE (gọi từ NewChartConfig) ----
+
+    // ===================================================================
+    //  CREATE MODE (from NewChartConfig)
+    // ===================================================================
     public void initParams(UUID datasetId, ChartType chartType) {
-        this.editingConfig = null; // chắc chắn là create
+        this.editingConfig = null;
         this.datasetId = datasetId;
         this.chartType = chartType;
 
@@ -89,8 +73,12 @@ public class ChartConfigView extends StandardView {
         setupMiddlePane();
     }
 
-    // ---- MODE EDIT (gọi từ ListView) ----
+
+    // ===================================================================
+    //  EDIT MODE (from ListView)
+    // ===================================================================
     public void initFromExisting(UUID chartConfigId) {
+
         ChartConfig cfg = dataManager.load(ChartConfig.class)
                 .id(chartConfigId)
                 .one();
@@ -99,201 +87,185 @@ public class ChartConfigView extends StandardView {
         this.datasetId = cfg.getDataset().getId();
         this.chartType = cfg.getChartType();
 
-        // load dataset + field list
         loadDatasetAndFields();
         setupLeftPane();
         setupMiddlePane();
 
-        // set tên chart
         chartNameField.setValue(cfg.getName());
 
-        // parse settingsJson để set value cho combo
-        String settings = cfg.getSettingsJson();
-        if (settings != null && !settings.isBlank()) {
-            try {
-                JsonNode node = objectMapper.readTree(settings);
-                if (chartType == ChartType.BAR) {
-                    String xField = node.path("xField").asText(null);
-                    String yField = node.path("yField").asText(null);
-                    barXFieldCombo.setValue(xField);
-                    barYFieldCombo.setValue(yField);
-                } else if (chartType == ChartType.PIE) {
-                    String labelField = node.path("labelField").asText(null);
-                    String valueField = node.path("valueField").asText(null);
-                    pieLabelFieldCombo.setValue(labelField);
-                    pieValueFieldCombo.setValue(valueField);
-                }
-            } catch (IOException e) {
-                notifications.create("Cannot parse settingsJson: " + e.getMessage()).show();
+        // Load existing settings → fill fragment combobox
+        try {
+            JsonNode node = objectMapper.readTree(cfg.getSettingsJson());
+
+            if (chartType == ChartType.BAR) {
+                barConfig.setFields(fieldNames);
+                barConfig.setXField(node.path("xField").asText(null));
+                barConfig.setYField(node.path("yField").asText(null));
             }
+
+            if (chartType == ChartType.PIE) {
+                pieConfig.setFields(fieldNames);
+                pieConfig.setLabelField(node.path("labelField").asText(null));
+                pieConfig.setValueField(node.path("valueField").asText(null));
+            }
+
+        } catch (Exception e) {
+            notifications.create("Cannot parse settingsJson").show();
         }
     }
 
-    // ---- COMMON ----
 
+
+    // ===================================================================
+    //  LOAD DATASET + FIELDS
+    // ===================================================================
     private void loadDatasetAndFields() {
+
         dataset = dataManager.load(Dataset.class)
                 .id(datasetId)
                 .one();
 
         fieldNames.clear();
 
-        if (dataset.getSchemaJson() != null) {
-            try {
-                JsonNode root = objectMapper.readTree(dataset.getSchemaJson());
-                if (root.isArray()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (JsonNode col : root) {
-                        String name = col.path("name").asText();
-                        String type = col.path("type").asText();
-                        if (!name.isEmpty()) {
-                            fieldNames.add(name);
-                            if (sb.length() > 0) {
-                                sb.append("\n");
-                            }
-                            sb.append(name);
-                            if (!type.isEmpty()) {
-                                sb.append(" (").append(type).append(")");
-                            }
-                        }
+        try {
+            JsonNode root = objectMapper.readTree(dataset.getSchemaJson());
+
+            if (root.isArray()) {
+                StringBuilder sb = new StringBuilder();
+
+                for (JsonNode col : root) {
+                    String name = col.path("name").asText();
+                    String type = col.path("type").asText();
+
+                    if (!name.isEmpty()) {
+                        fieldNames.add(name);
+
+                        if (sb.length() > 0) sb.append("\n");
+                        sb.append(name);
+
+                        if (!type.isEmpty()) sb.append(" (").append(type).append(")");
                     }
-                    fieldsArea.setValue(sb.toString());
                 }
-            } catch (IOException e) {
-                fieldsArea.setValue("Cannot parse schemaJson: " + e.getMessage());
+
+                fieldsArea.setValue(sb.toString());
             }
+
+        } catch (IOException e) {
+            fieldsArea.setValue("Cannot parse schemaJson: " + e.getMessage());
         }
     }
 
+
+    // ===================================================================
+    //  LEFT PANE
+    // ===================================================================
     private void setupLeftPane() {
         datasetNameLabel.setText(dataset.getName());
-        chartTypeLabel.setText(chartType != null ? chartType.name() : "N/A");
+        chartTypeLabel.setText(chartType.name());
     }
 
+
+    // ===================================================================
+    //  MIDDLE PANE → Show fragment + load fields
+    // ===================================================================
     private void setupMiddlePane() {
-        // set options cho tất cả combobox
-        barXFieldCombo.setItems(fieldNames);
-        barYFieldCombo.setItems(fieldNames);
-        pieLabelFieldCombo.setItems(fieldNames);
-        pieValueFieldCombo.setItems(fieldNames);
 
-        // show/hide tùy chart type
         if (chartType == ChartType.BAR) {
-            barConfigBox.setVisible(true);
-            pieConfigBox.setVisible(false);
-        } else if (chartType == ChartType.PIE) {
-            barConfigBox.setVisible(false);
-            pieConfigBox.setVisible(true);
-        } else {
-            barConfigBox.setVisible(false);
-            pieConfigBox.setVisible(false);
+            barConfig.setFields(fieldNames);
+            barConfig.setVisible(true);
+
+            pieConfig.setVisible(false);
+        }
+        else if (chartType == ChartType.PIE) {
+            pieConfig.setFields(fieldNames);
+            pieConfig.setVisible(true);
+
+            barConfig.setVisible(false);
         }
     }
 
+
+    // ===================================================================
+    //  PREVIEW CHART
+    // ===================================================================
     @Subscribe(id = "previewBtn", subject = "clickListener")
-    public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
-        if (dataset == null) {
-            notifications.create("Dataset is not loaded").show();
-            return;
-        }
+    public void onPreviewBtnClick(ClickEvent<JmixButton> event) {
 
         String settingsJson = buildSettingsJsonFromUi();
-        if (settingsJson == null) {
-            return; // đã show thông báo trong hàm build
-        }
 
-        // Xoá chart cũ
+        if (settingsJson == null) return;
+
         chartContainer.removeAll();
 
-        // Tạo chart preview
         Chart chart = chartConfigService.buildPreviewChart(
                 dataset,
                 chartType,
                 settingsJson
         );
 
-        if (chart == null) {
-            notifications.create("Cannot build chart").show();
-            return;
-        }
-
         chart.setWidthFull();
         chart.setHeight("400px");
         chartContainer.add(chart);
     }
 
+
+    // ===================================================================
+    //  Convert UI to settingsJson
+    // ===================================================================
     private String buildSettingsJsonFromUi() {
-        if (chartType == null) {
-            notifications.create("Chart type is not set").show();
-            return null;
-        }
-
-        String f1;
-        String f2;
-
-        if (chartType == ChartType.BAR) {
-            f1 = barXFieldCombo.getValue();
-            f2 = barYFieldCombo.getValue();
-            if (f1 == null || f2 == null) {
-                notifications.create("Please select X and Y fields").show();
-                return null;
-            }
-        } else if (chartType == ChartType.PIE) {
-            f1 = pieLabelFieldCombo.getValue();
-            f2 = pieValueFieldCombo.getValue();
-            if (f1 == null || f2 == null) {
-                notifications.create("Please select Label and Value fields").show();
-                return null;
-            }
-        } else {
-            notifications.create("Unsupported chart type").show();
-            return null;
-        }
 
         ObjectNode node = objectMapper.createObjectNode();
+
         if (chartType == ChartType.BAR) {
-            node.put("xField", f1);
-            node.put("yField", f2);
-        } else if (chartType == ChartType.PIE) {
-            node.put("labelField", f1);
-            node.put("valueField", f2);
+            String x = barConfig.getXField();
+            String y = barConfig.getYField();
+            if (x == null || y == null) {
+                notifications.create("Please select X and Y").show();
+                return null;
+            }
+            node.put("xField", x);
+            node.put("yField", y);
+        }
+
+        if (chartType == ChartType.PIE) {
+            String lbl = pieConfig.getLabelField();
+            String val = pieConfig.getValueField();
+            if (lbl == null || val == null) {
+                notifications.create("Please select Label and Value").show();
+                return null;
+            }
+            node.put("labelField", lbl);
+            node.put("valueField", val);
         }
 
         return node.toString();
     }
 
-    @Subscribe(id = "save", subject = "clickListener")
-    public void onSaveClick(final ClickEvent<JmixButton> event) {
-        if (dataset == null || chartType == null) {
-            notifications.create("Dataset or chart type is empty").show();
-            return;
-        }
 
-        String name = chartNameField.getValue();
-        if (name == null || name.isBlank()) {
+    // ===================================================================
+    //  SAVE
+    // ===================================================================
+    @Subscribe(id = "save", subject = "clickListener")
+    public void onSaveClick(ClickEvent<JmixButton> event) {
+
+        if (chartNameField.getValue() == null || chartNameField.getValue().toString().isBlank()) {
             notifications.create("Please enter chart name").show();
             return;
         }
 
         String settingsJson = buildSettingsJsonFromUi();
-        if (settingsJson == null) {
-            return;
-        }
+        if (settingsJson == null) return;
 
-        ChartConfig config;
-        if (editingConfig != null) {
-            config = editingConfig;
-        } else {
-            config = dataManager.create(ChartConfig.class);
-        }
+        ChartConfig config =
+                (editingConfig != null) ? editingConfig : dataManager.create(ChartConfig.class);
 
-        config.setName(name.trim());
+        config.setName(chartNameField.getValue().toString());
         config.setDataset(dataset);
         config.setChartType(chartType);
         config.setSettingsJson(settingsJson);
 
-        editingConfig = dataManager.save(config);
+        dataManager.save(config);
 
-        notifications.create("ChartConfig has been saved").show();
+        notifications.create("ChartConfig saved!").show();
     }
 }

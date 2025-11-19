@@ -32,35 +32,19 @@
 
                     <!-- SPLIT 2: Chart config -->
                     <vbox id="middlePane" width="25%" padding="true" spacing="true">
+
                         <nativeLabel text="Chart configuration"/>
 
-                        <!-- Config BAR -->
-                        <vbox id="barConfigBox" width="100%" spacing="true">
-                            <nativeLabel text="X field"/>
-                            <comboBox id="barXFieldCombo"
-                                      width="100%"/>
-
-                            <nativeLabel text="Y field"/>
-                            <comboBox id="barYFieldCombo"
-                                      width="100%"/>
-                        </vbox>
-
-                        <!-- Config PIE -->
-                        <vbox id="pieConfigBox" width="100%" spacing="true">
-                            <nativeLabel text="Label field"/>
-                            <comboBox id="pieLabelFieldCombo"
-                                      width="100%"/>
-
-                            <nativeLabel text="Value field"/>
-                            <comboBox id="pieValueFieldCombo"
-                                      width="100%"/>
-                        </vbox>
+                        <fragment id="barConfig" class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
+                        <fragment id="pieConfig" class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
 
                         <hbox spacing="true">
                             <button id="previewBtn" text="Preview"/>
                             <button id="closeBtn" action="closeAction"/>
                         </hbox>
+
                     </vbox>
+
                 </split>
 
                 <!-- SPLIT 3: Chart preview -->

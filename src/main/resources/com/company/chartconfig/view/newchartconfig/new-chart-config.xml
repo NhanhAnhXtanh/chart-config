@@ -1,54 +1,92 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
       title="msg://newChartConfig.title">
+
     <data>
         <instance id="chartConfigDc"
                   class="com.company.chartconfig.entity.ChartConfig">
             <fetchPlan extends="_base">
                 <property name="dataset" fetchPlan="_base"/>
             </fetchPlan>
+            <loader id="chartConfigDl"/>
         </instance>
+
+        <keyValueCollection id="chartTypesDc">
+            <properties>
+                <property name="code"/>
+                <property name="icon"/>
+                <property name="category"/>
+                <property name="tags"/>
+            </properties>
+        </keyValueCollection>
+        <collection id="datasetsDc"
+                    class="com.company.chartconfig.entity.Dataset">
+            <loader id="datasetsDl">
+                <query>
+                    <![CDATA[select e from Dataset e order by e.name asc]]>
+                </query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+
     </data>
 
     <facets>
         <dataLoadCoordinator auto="true"/>
     </facets>
 
-    <actions>
-        <action id="createAction" type="list_create"/>
-    </actions>
-
     <layout>
-        <vbox width="100%" padding="false">
-            <h2 text="Create a new chart"/>
 
-            <hbox width="100%">
-                <vbox width="100%" padding="false">
-                    <h4 text="Choose a dataset"/>
-                    <entityPicker id="datasetField"
-                                  property="dataset"
-                                  dataContainer="chartConfigDc"
-                                  width="100%">
-                        <actions>
-                            <action id="entityLookupAction" type="entity_lookup"/>
-                            <action id="entityClearAction" type="entity_clear"/>
-                        </actions>
-                    </entityPicker>
-                </vbox>
+        <!-- PAGE WRAPPER -->
+        <vbox width="100%"
+              css="padding: 28px; gap: 28px;">
 
-                <vbox width="100%" padding="false">
-                    <h4 text="Choose chart type"/>
-                    <comboBox id="chartTypeField"
-                              property="chartType"
-                              datatype="enum"
-                              dataContainer="chartConfigDc"
-                              width="100%"/>
-                </vbox>
+            <h2 text="Create a new chart"
+                css="font-size: 26px; font-weight: 700; color: var(--lumo-primary-color);" />
+
+            <vbox width="100%">
+
+                <h4 text="Choose dataset"
+                    css="font-size: 16px; font-weight: 600;" />
+
+                <entityComboBox id="datasetField"
+                                dataContainer="chartConfigDc"
+                                property="dataset"
+                                itemsContainer="datasetsDc"
+                                label="Dataset"
+                                placeholder="Select dataset...">
+                </entityComboBox>
+            </vbox>
+
+            <h4 text="Choose chart type"
+                css="font-size: 18px; font-weight: 600;" />
+
+            <gridLayout id="chartTypeGrid"
+                        itemsContainer="chartTypesDc"
+                        width="100%"
+                        minHeight="300px"
+                        columnMinWidth="1rem"
+                        gap="var(--lumo-space-s)"
+                        classNames="pt-m pb-l px-m"/>
+
+            <hbox alignItems="CENTER">
+                <button id="createBtn"
+                        text="Create"
+                        css="background-color: var(--lumo-primary-color);
+                             color: white;
+                             padding: 10px 24px;
+                             font-size: 16px;
+                             font-weight: 600;
+                             border-radius: 10px;
+                             cursor: pointer;
+                             border: none;
+                             box-shadow: var(--lumo-box-shadow-m);
+                             transition: all .2s;">
+                </button>
             </hbox>
 
-            <hbox id="actions">
-                <button id="createBtn" text="Create"/>
-            </hbox>
         </vbox>
+
     </layout>
+
 </view>
