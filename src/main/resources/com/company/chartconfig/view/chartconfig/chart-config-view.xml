@@ -6,60 +6,114 @@
         <action id="closeAction" type="view_close"/>
     </actions>
 
-    <layout>
+    <!-- 🔹 GLOBAL LAYOUT -->
+    <layout css="padding: 24px; background-color: #f4f6f8; gap: 20px; height: 100%;">
 
-        <!-- TOP toolbar -->
-        <hbox width="100%">
-            <textField id="chartNameField" placeholder="Tên chart"/>
-            <button id="save" text="Save"/>
+        <!-- 🔹 HEADER -->
+        <vbox width="100%" css="background-color: #ffffff; padding: 16px 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <hbox spacing="true" css="gap: 40px; align-items: center;">
+                <hbox css="gap: 8px; align-items: center;">
+                    <icon icon="DATABASE" css="color: var(--lumo-primary-color); width: 18px; height: 18px;"/>
+                    <nativeLabel text="Dataset:" css="font-weight: 600; color: var(--lumo-secondary-text-color); font-size: 0.9em;"/>
+                    <nativeLabel id="datasetNameLabel" css="font-weight: 600; color: var(--lumo-header-text-color); font-size: 1.1em;"/>
+                </hbox>
+
+                <hbox css="gap: 8px; align-items: center;">
+                    <icon icon="BAR_CHART" css="color: var(--lumo-primary-color); width: 18px; height: 18px;"/>
+                    <nativeLabel text="Chart type:" css="font-weight: 600; color: var(--lumo-secondary-text-color); font-size: 0.9em;"/>
+                    <nativeLabel id="chartTypeLabel" css="font-weight: 600; color: var(--lumo-header-text-color); font-size: 1.1em;"/>
+                </hbox>
+            </hbox>
+        </vbox>
+
+        <!-- 🔹 TOOLBAR: Input dãn rộng tối đa -->
+        <hbox width="40%" height="100px" css="align-items: center; gap: 16px;">
+            <!-- Đã thay đổi: width="100%" và thêm flex-grow để input dài ra -->
+            <textField id="chartNameField"
+                       placeholder="Nhập tên biểu đồ..."
+                       height="50px"
+                       css="flex-grow: 1; font-size: 18px; --lumo-text-field-size: 50px;"
+                       helperText="Tên hiển thị trên dashboard">
+                <prefix>
+                    <icon icon="PENCIL" css="width: 20px; height: 20px;"/>
+                </prefix>
+            </textField>
+
+            <button id="save"
+                    text="Lưu cấu hình"
+                    icon="CHECK"
+                    height="50px"
+                    themeNames="primary"
+                    css="border-radius: 8px; padding: 0 32px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
         </hbox>
 
-        <hbox width="100%" height="100%">
-            <split width="100%">
+        <!-- 🔹 MAIN CONTENT -->
+        <hbox width="100%" height="100%" css="gap: 20px; align-items: stretch;">
 
-                <split width="40%">
+            <!-- 🔸 LEFT PANE: Fields List (Tăng lên 25%) -->
+            <vbox width="25%"
+                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 16px; border: 1px solid rgba(0,0,0,0.05);">
 
-                    <!-- LEFT PANE -->
-                    <vbox id="leftPane" width="25%" padding="true" spacing="true">
-                        <nativeLabel text="Dataset"/>
-                        <nativeLabel id="datasetNameLabel"/>
+                <hbox css="align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <icon icon="LIST" css="color: var(--lumo-secondary-text-color); width: 16px;"/>
+                    <nativeLabel text="Danh sách trường" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;"/>
+                </hbox>
 
-                        <nativeLabel text="Chart type"/>
-                        <nativeLabel id="chartTypeLabel"/>
+                <nativeLabel text="Kéo thả vào trục X/Y" css="font-size: 30px; color: var(--lumo-secondary-text-color); margin-bottom: -10px;"/>
 
-                        <nativeLabel text="Fields (Drag vào X/Y)"/>
-                        <vbox id="fieldsList" spacing="5"/>
-                    </vbox>
+                <vbox id="fieldsList"
+                      width="100%"
+                      height="100%"
+                      css="overflow-y: auto; gap: 8px; padding-right: 4px;"/>
+            </vbox>
 
+            <!-- 🔸 MIDDLE PANE: Configuration (Giữ nguyên 25%) -->
+            <vbox width="25%"
+                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 20px; border: 1px solid rgba(0,0,0,0.05);">
 
-                    <!-- MIDDLE PANE -->
-                    <vbox id="middlePane" width="25%" padding="true" spacing="true">
+                <hbox css="align-items: center; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 12px;">
+                    <icon icon="COG" css="color: var(--lumo-secondary-text-color);"/>
+                    <nativeLabel text="Cấu hình trục" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 16px;"/>
+                </hbox>
 
-                        <nativeLabel text="Chart configuration"/>
+                <vbox id="configContainer" width="100%" css="gap: 16px; flex-grow: 1;">
+                    <fragment id="barConfig"
+                              class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
 
-                        <fragment id="barConfig"
-                                  class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
-
-                        <fragment id="pieConfig"
-                                  class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
-
-                        <hbox spacing="10">
-                            <button id="previewBtn" text="Preview"/>
-                            <button id="closeBtn" action="closeAction"/>
-                        </hbox>
-
-                    </vbox>
-
-                </split>
-
-                <!-- RIGHT PANE -->
-                <vbox id="rightPane" width="50%" padding="true" spacing="true">
-                    <nativeLabel text="Preview"/>
-                    <vbox id="chartContainer" width="100%" height="100%"/>
+                    <fragment id="pieConfig"
+                              class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
                 </vbox>
 
-            </split>
-        </hbox>
+                <vbox width="100%" css="gap: 10px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--lumo-contrast-10pct);">
+                    <button id="previewBtn"
+                            text="Xem trước (Preview)"
+                            width="100%"
+                            themeNames="primary outlined"
+                            css="border-radius: 8px;"/>
+                    <button id="closeBtn"
+                            action="closeAction"
+                            text="Hủy bỏ"
+                            width="100%"
+                            themeNames="tertiary error"
+                            css="border-radius: 8px;"/>
+                </vbox>
+            </vbox>
 
+            <!-- 🔸 RIGHT PANE: Preview Area (Giảm xuống 50%) -->
+            <vbox width="50%"
+                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 24px; border: 1px solid rgba(0,0,0,0.05);">
+
+                <hbox css="justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <nativeLabel text="Biểu đồ hiển thị" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 18px;"/>
+                    <span css="background: var(--lumo-contrast-5pct); padding: 4px 12px; border-radius: 20px; color: var(--lumo-secondary-text-color); font-size: 12px;">Live Preview</span>
+                </hbox>
+
+                <vbox id="chartContainer"
+                      width="100%"
+                      height="100%"
+                      css="background-color: #fafafa; border-radius: 8px; border: 1px dashed #d0d0d0; justify-content: center; align-items: center; overflow: hidden;"/>
+            </vbox>
+
+        </hbox>
     </layout>
 </view>
