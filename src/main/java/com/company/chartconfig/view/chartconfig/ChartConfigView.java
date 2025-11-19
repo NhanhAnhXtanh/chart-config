@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.dnd.DragSource;
-import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
@@ -20,7 +19,6 @@ import io.jmix.chartsflowui.component.Chart;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.ViewNavigators;
-import io.jmix.flowui.component.textarea.JmixTextArea;
 import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
@@ -38,7 +36,6 @@ public class ChartConfigView extends StandardView {
 
     private Dataset dataset;
     private List<String> fieldNames = new ArrayList<>();
-
     private ChartConfig editingConfig;
 
     @Autowired private DataManager dataManager;
@@ -47,38 +44,31 @@ public class ChartConfigView extends StandardView {
     @Autowired private ChartConfigService chartConfigService;
     @Autowired private ViewNavigators viewNavigators;
 
-    // LEFT + MIDDLE + RIGHT
+    // Components
     @ViewComponent private NativeLabel datasetNameLabel;
     @ViewComponent private NativeLabel chartTypeLabel;
-
     @ViewComponent private BarConfigFragment barConfig;
     @ViewComponent private PieConfigFragment pieConfig;
-
     @ViewComponent private VerticalLayout chartContainer;
     @ViewComponent private TypedTextField<Object> chartNameField;
-
     @ViewComponent private VerticalLayout fieldsList;
 
-
-    // =====================================
+    // =============================
     // CREATE MODE
-    // =====================================
+    // =============================
     public void initParams(UUID datasetId, ChartType chartType) {
         this.editingConfig = null;
         this.datasetId = datasetId;
         this.chartType = chartType;
-
         loadDatasetAndFields();
         setupLeftPane();
         setupMiddlePane();
     }
 
-
-    // =====================================
+    // =============================
     // EDIT MODE
-    // =====================================
+    // =============================
     public void initFromExisting(UUID chartConfigId) {
-
         ChartConfig cfg = dataManager.load(ChartConfig.class)
                 .id(chartConfigId).one();
 
@@ -105,16 +95,14 @@ public class ChartConfigView extends StandardView {
                 pieConfig.setLabelField(node.path("labelField").asText(null));
                 pieConfig.setValueField(node.path("valueField").asText(null));
             }
-
         } catch (Exception e) {
             notifications.create("Cannot parse settingsJson").show();
         }
     }
 
-
-    // =====================================
+    // =============================
     // LOAD DATASET FIELDS
-    // =====================================
+    // =============================
     private void loadDatasetAndFields() {
         dataset = dataManager.load(Dataset.class).id(datasetId).one();
         fieldNames.clear();
@@ -135,6 +123,9 @@ public class ChartConfigView extends StandardView {
         }
     }
 
+    // =============================
+    // ADD DRAGGABLE FIELD
+    // =============================
     private void addDraggableField(String name, String type) {
         String displayText = name + " (" + type + ")";
         NativeLabel lbl = new NativeLabel(displayText);
@@ -149,58 +140,44 @@ public class ChartConfigView extends StandardView {
                 .set("user-select", "none")
                 .set("margin-bottom", "4px");
 
-        // Kích hoạt draggable
-        lbl.getElement().setAttribute("draggable", "true");
         lbl.getElement().setAttribute("data-field-name", name);
 
-        // JS event: thêm dataTransfer khi người dùng bắt đầu kéo
-        lbl.getElement().executeJs("""
-        this.addEventListener('dragstart', e => {
-            e.dataTransfer.setData('text/plain', this.getAttribute('data-field-name'));
-        });
-    """);
+        // Dùng Vaadin DragSource thay vì JS
+        DragSource<NativeLabel> dragSource = DragSource.create(lbl);
+        dragSource.setDragData(name);
 
         fieldsList.add(lbl);
     }
 
-
-
-
-
-    // =====================================
+    // =============================
     // LEFT + MIDDLE PANES
-    // =====================================
+    // =============================
     private void setupLeftPane() {
         datasetNameLabel.setText(dataset.getName());
         chartTypeLabel.setText(chartType.name());
     }
 
     private void setupMiddlePane() {
-
         if (chartType == ChartType.BAR) {
             barConfig.setFields(fieldNames);
             barConfig.setVisible(true);
             pieConfig.setVisible(false);
-        }
-
-        if (chartType == ChartType.PIE) {
+        } else if (chartType == ChartType.PIE) {
             pieConfig.setFields(fieldNames);
             pieConfig.setVisible(true);
             barConfig.setVisible(false);
         }
     }
 
-
-    // =====================================
-    // PREVIEW CHART
-    // =====================================
+    // =============================
+    // PREVIEW
+    // =============================
     @Subscribe(id = "previewBtn", subject = "clickListener")
     public void onPreviewBtnClick(ClickEvent<JmixButton> event) {
         String settingsJson = buildSettingsJson();
         if (settingsJson == null) return;
 
         chartContainer.removeAll();
-
         try {
             Chart chart = chartConfigService.buildPreviewChart(dataset, chartType, settingsJson);
             chart.setWidthFull();
@@ -212,18 +189,13 @@ public class ChartConfigView extends StandardView {
         }
     }
 
-
-
-    // =====================================
-    // BUILD JSON SETTINGS
-    // =====================================
+    // =============================
+    // BUILD SETTINGS JSON
+    // =============================
     private String buildSettingsJson() {
         ObjectNode node = objectMapper.createObjectNode();
 
         if (chartType == ChartType.BAR) {
-            // ép Vaadin flush giá trị client-side
-            getUI().ifPresent(ui -> ui.getPage().executeJs("window.getSelection()?.removeAllRanges();"));
-
             String x = barConfig.getXField();
             String y = barConfig.getYField();
 
@@ -235,6 +207,7 @@ public class ChartConfigView extends StandardView {
             node.put("xField", x);
             node.put("yField", y);
         }
+
         if (chartType == ChartType.PIE) {
             String label = pieConfig.getLabelField();
             String value = pieConfig.getValueField();
@@ -247,18 +220,16 @@ public class ChartConfigView extends StandardView {
             node.put("labelField", label);
             node.put("valueField", value);
         }
+
         return node.toString();
     }
 
-
-    // =====================================
+    // =============================
     // SAVE
-    // =====================================
+    // =============================
     @Subscribe(id = "save", subject = "clickListener")
     public void onSaveClick(ClickEvent<JmixButton> event) {
-
-        if (chartNameField.getValue() == null ||
-                chartNameField.getValue().toString().isBlank()) {
+        if (chartNameField.getValue() == null || chartNameField.getValue().toString().isBlank()) {
             notifications.create("Please enter chart name").show();
             return;
         }
@@ -276,9 +247,7 @@ public class ChartConfigView extends StandardView {
         config.setSettingsJson(settingsJson);
 
         dataManager.save(config);
-
-        notifications.create("ChartConfig saved!").show();
-
+        notifications.create("✅ ChartConfig saved!").show();
         viewNavigators.view(this, ChartConfigListView.class).navigate();
     }
 }
