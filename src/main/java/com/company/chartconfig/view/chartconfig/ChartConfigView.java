@@ -235,6 +235,18 @@ public class ChartConfigView extends StandardView {
             node.put("xField", x);
             node.put("yField", y);
         }
+        if (chartType == ChartType.PIE) {
+            String label = pieConfig.getLabelField();
+            String value = pieConfig.getValueField();
+
+            if (label == null || label.isBlank() || value == null || value.isBlank()) {
+                notifications.create("Please select Label and Value").show();
+                return null;
+            }
+
+            node.put("labelField", label);
+            node.put("valueField", value);
+        }
         return node.toString();
     }
 

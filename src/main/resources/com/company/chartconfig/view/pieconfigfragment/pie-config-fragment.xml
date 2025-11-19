@@ -1,15 +1,21 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
-        <vbox id="root" spacing="10">
+        <vbox id="root"
+              spacing="true"
+              css="align-items:start; gap:12px;">
 
-            <nativeLabel text="Label Field"/>
-            <div id="labelDropZone" css="border:1px dashed #888; padding:10px; height:40px;">
-                <span id="labelValue"/>
+            <span text="Label Field" style="font-weight:500; color:#444;"/>
+            <div id="labelDropZone"
+                 css="width:220px; height:50px; border:2px dashed #b0bec5;
+                      border-radius:8px; display:flex; align-items:center; justify-content:center;
+                      background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
             </div>
 
-            <nativeLabel text="Value Field"/>
-            <div id="valueDropZone" css="border:1px dashed #888; padding:10px; height:40px;">
-                <span id="valueValue"/>
+            <span text="Value Field" style="font-weight:500; color:#444;"/>
+            <div id="valueDropZone"
+                 css="width:220px; height:50px; border:2px dashed #b0bec5;
+                      border-radius:8px; display:flex; align-items:center; justify-content:center;
+                      background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
             </div>
 
         </vbox>
