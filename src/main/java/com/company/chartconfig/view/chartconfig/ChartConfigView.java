@@ -1,6 +1,5 @@
 package com.company.chartconfig.view.chartconfig;
 
-
 import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
@@ -32,11 +31,15 @@ import java.util.UUID;
 @ViewController(id = "ChartConfigView")
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
+
     private UUID datasetId;
     private ChartType chartType;
 
     private Dataset dataset;
     private List<String> fieldNames = new ArrayList<>();
+
+    // nếu != null -> đang edit ChartConfig
+    private ChartConfig editingConfig;
 
     @Autowired
     private DataManager dataManager;
@@ -45,7 +48,7 @@ public class ChartConfigView extends StandardView {
     @Autowired
     private Notifications notifications;
     @Autowired
-    private ChartConfigService chartConfigService; // bạn đã có service này
+    private ChartConfigService chartConfigService;
 
     // SPLIT 1
     @ViewComponent
@@ -75,8 +78,9 @@ public class ChartConfigView extends StandardView {
     @ViewComponent
     private TypedTextField<Object> chartNameField;
 
-    // được gọi từ NewChartConfig
+    // ---- MODE CREATE (gọi từ NewChartConfig) ----
     public void initParams(UUID datasetId, ChartType chartType) {
+        this.editingConfig = null; // chắc chắn là create
         this.datasetId = datasetId;
         this.chartType = chartType;
 
@@ -84,6 +88,48 @@ public class ChartConfigView extends StandardView {
         setupLeftPane();
         setupMiddlePane();
     }
+
+    // ---- MODE EDIT (gọi từ ListView) ----
+    public void initFromExisting(UUID chartConfigId) {
+        ChartConfig cfg = dataManager.load(ChartConfig.class)
+                .id(chartConfigId)
+                .one();
+
+        this.editingConfig = cfg;
+        this.datasetId = cfg.getDataset().getId();
+        this.chartType = cfg.getChartType();
+
+        // load dataset + field list
+        loadDatasetAndFields();
+        setupLeftPane();
+        setupMiddlePane();
+
+        // set tên chart
+        chartNameField.setValue(cfg.getName());
+
+        // parse settingsJson để set value cho combo
+        String settings = cfg.getSettingsJson();
+        if (settings != null && !settings.isBlank()) {
+            try {
+                JsonNode node = objectMapper.readTree(settings);
+                if (chartType == ChartType.BAR) {
+                    String xField = node.path("xField").asText(null);
+                    String yField = node.path("yField").asText(null);
+                    barXFieldCombo.setValue(xField);
+                    barYFieldCombo.setValue(yField);
+                } else if (chartType == ChartType.PIE) {
+                    String labelField = node.path("labelField").asText(null);
+                    String valueField = node.path("valueField").asText(null);
+                    pieLabelFieldCombo.setValue(labelField);
+                    pieValueFieldCombo.setValue(valueField);
+                }
+            } catch (IOException e) {
+                notifications.create("Cannot parse settingsJson: " + e.getMessage()).show();
+            }
+        }
+    }
+
+    // ---- COMMON ----
 
     private void loadDatasetAndFields() {
         dataset = dataManager.load(Dataset.class)
@@ -166,10 +212,16 @@ public class ChartConfigView extends StandardView {
                 settingsJson
         );
 
+        if (chart == null) {
+            notifications.create("Cannot build chart").show();
+            return;
+        }
+
         chart.setWidthFull();
         chart.setHeight("400px");
         chartContainer.add(chart);
     }
+
     private String buildSettingsJsonFromUi() {
         if (chartType == null) {
             notifications.create("Chart type is not set").show();
@@ -198,7 +250,6 @@ public class ChartConfigView extends StandardView {
             return null;
         }
 
-        // build JSON
         ObjectNode node = objectMapper.createObjectNode();
         if (chartType == ChartType.BAR) {
             node.put("xField", f1);
@@ -218,7 +269,6 @@ public class ChartConfigView extends StandardView {
             return;
         }
 
-        // Lấy tên chart
         String name = chartNameField.getValue();
         if (name == null || name.isBlank()) {
             notifications.create("Please enter chart name").show();
@@ -227,20 +277,23 @@ public class ChartConfigView extends StandardView {
 
         String settingsJson = buildSettingsJsonFromUi();
         if (settingsJson == null) {
-            return; // đã báo lỗi nếu thiếu field
+            return;
         }
 
-        // Tạo ChartConfig mới và lưu DB
-        ChartConfig config = dataManager.create(ChartConfig.class);
-        config.setName(name.trim());       // <-- bắt buộc set name
+        ChartConfig config;
+        if (editingConfig != null) {
+            config = editingConfig;
+        } else {
+            config = dataManager.create(ChartConfig.class);
+        }
+
+        config.setName(name.trim());
         config.setDataset(dataset);
         config.setChartType(chartType);
         config.setSettingsJson(settingsJson);
 
-        dataManager.save(config);
+        editingConfig = dataManager.save(config);
 
         notifications.create("ChartConfig has been saved").show();
     }
-
-
 }

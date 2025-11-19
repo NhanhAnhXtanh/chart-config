@@ -32,31 +32,7 @@ public class ChartConfigService {
     }
 
     // -------------------------------------------------------------
-    // 1) Extract column names từ schemaJson (bắt buộc)
-    // -------------------------------------------------------------
-    public List<String> extractColumnsFromSchema(String schemaJson) {
-        try {
-            JsonNode root = objectMapper.readTree(schemaJson);
-
-            if (!root.isArray()) {
-                throw new RuntimeException("schemaJson phải là array");
-            }
-
-            List<String> columns = new ArrayList<>();
-
-            for (JsonNode field : root) {
-                columns.add(field.get("name").asText());
-            }
-
-            return columns;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Schema JSON invalid: " + e.getMessage());
-        }
-    }
-
-    // -------------------------------------------------------------
-    // 2) Build items từ rawJson -> List<MapDataItem>
+    // 1) Build items từ rawJson -> List<MapDataItem>
     // -------------------------------------------------------------
     public List<MapDataItem> buildItems(Dataset dataset) {
 
@@ -94,7 +70,7 @@ public class ChartConfigService {
     }
 
     // -------------------------------------------------------------
-    // 3) Create BAR CHART bằng Java
+    // 2) Create BAR CHART bằng Java
     // -------------------------------------------------------------
     public Chart createBarChart(String xField, String yField, List<MapDataItem> items) {
 
@@ -136,6 +112,9 @@ public class ChartConfigService {
         return chart;
     }
 
+    // -------------------------------------------------------------
+    // 3) Create PIE CHART bằng Java
+    // -------------------------------------------------------------
     public Chart createPieChart(String labelField, String valueField, List<MapDataItem> items) {
 
         Chart chart = uiComponents.create(Chart.class);
@@ -161,6 +140,9 @@ public class ChartConfigService {
         return chart;
     }
 
+    // -------------------------------------------------------------
+    // 4) Preview Chart từ Dataset, ChartType, settingsJson
+    // -------------------------------------------------------------
     public Chart buildPreviewChart(Dataset dataset, ChartType type, String settingsJson) {
         if (dataset == null) {
             throw new IllegalArgumentException("Dataset must not be null");
@@ -206,8 +188,6 @@ public class ChartConfigService {
             throw new RuntimeException("Cannot build preview chart: " + e.getMessage(), e);
         }
     }
-
-
 
 
 }
