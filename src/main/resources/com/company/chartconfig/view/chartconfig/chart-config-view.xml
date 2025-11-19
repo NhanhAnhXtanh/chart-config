@@ -7,8 +7,12 @@
     </actions>
 
     <layout>
-        <hbox width="100%" height="100%">
+        <hbox width="100%">
+            <textField id="chartNameField" placeholder="Tên chart"/>
+            <button id="save" text="Save" alignSelf="END"/>
+        </hbox>
 
+        <hbox width="100%" height="100%">
             <!-- SPLIT 1: Dataset + fields -->
             <split width="100%">
                 <split width="40%">
@@ -61,7 +65,7 @@
 
                 <!-- SPLIT 3: Chart preview -->
                 <vbox id="rightPane" width="50%" padding="true" spacing="true">
-                    <nativeLabel text="Preview"/>
+                    <nativeLabel text="Preview" width="90%"/>
                     <vbox id="chartContainer"
                           width="100%"
                           height="100%"/>

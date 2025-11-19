@@ -53,6 +53,7 @@
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
+                <column property="name"/>
                 <column property="chartType"/>
                 <column property="dataset"/>
                 <column property="settingsJson"/>

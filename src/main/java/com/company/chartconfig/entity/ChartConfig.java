@@ -2,6 +2,7 @@ package com.company.chartconfig.entity;
 
 import com.company.chartconfig.enums.ChartType;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
+import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,11 @@ public class ChartConfig {
     @Id
     @Column(name = "ID", nullable = false)
     private UUID id;
+
+    @InstanceName
+    @NotNull
+    @Column(name = "NAME", nullable = false)
+    private String name;
 
     @NotNull
     @Column(name = "CHART_TYPE", nullable = false)
@@ -48,6 +54,14 @@ public class ChartConfig {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Dataset getDataset() {

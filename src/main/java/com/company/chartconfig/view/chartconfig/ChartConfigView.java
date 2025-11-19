@@ -1,6 +1,7 @@
 package com.company.chartconfig.view.chartconfig;
 
 
+import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
@@ -17,6 +18,7 @@ import io.jmix.core.DataManager;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.textarea.JmixTextArea;
+import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +72,8 @@ public class ChartConfigView extends StandardView {
     private VerticalLayout chartContainer;
     @ViewComponent
     private JmixTextArea fieldsArea;
+    @ViewComponent
+    private TypedTextField<Object> chartNameField;
 
     // được gọi từ NewChartConfig
     public void initParams(UUID datasetId, ChartType chartType) {
@@ -142,45 +146,20 @@ public class ChartConfigView extends StandardView {
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
     public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
-        if (chartType == null) {
-            notifications.create("Chart type is not set").show();
+        if (dataset == null) {
+            notifications.create("Dataset is not loaded").show();
             return;
         }
 
-        String f1;
-        String f2;
-
-        if (chartType == ChartType.BAR) {
-            f1 = barXFieldCombo.getValue();
-            f2 = barYFieldCombo.getValue();
-            if (f1 == null || f2 == null) {
-                notifications.create("Please select X and Y fields").show();
-                return;
-            }
-        } else { // PIE
-            f1 = pieLabelFieldCombo.getValue();
-            f2 = pieValueFieldCombo.getValue();
-            if (f1 == null || f2 == null) {
-                notifications.create("Please select Label and Value fields").show();
-                return;
-            }
+        String settingsJson = buildSettingsJsonFromUi();
+        if (settingsJson == null) {
+            return; // đã show thông báo trong hàm build
         }
-
-        // build settingsJson giống code bạn đã có
-        ObjectNode node = objectMapper.createObjectNode();
-        if (chartType == ChartType.BAR) {
-            node.put("xField", f1);
-            node.put("yField", f2);
-        } else if (chartType == ChartType.PIE) {
-            node.put("labelField", f1);
-            node.put("valueField", f2);
-        }
-        String settingsJson = node.toString();
 
         // Xoá chart cũ
         chartContainer.removeAll();
 
-        // Tạo chart preview – dùng service bạn đã viết trước đó
+        // Tạo chart preview
         Chart chart = chartConfigService.buildPreviewChart(
                 dataset,
                 chartType,
@@ -191,4 +170,77 @@ public class ChartConfigView extends StandardView {
         chart.setHeight("400px");
         chartContainer.add(chart);
     }
+    private String buildSettingsJsonFromUi() {
+        if (chartType == null) {
+            notifications.create("Chart type is not set").show();
+            return null;
+        }
+
+        String f1;
+        String f2;
+
+        if (chartType == ChartType.BAR) {
+            f1 = barXFieldCombo.getValue();
+            f2 = barYFieldCombo.getValue();
+            if (f1 == null || f2 == null) {
+                notifications.create("Please select X and Y fields").show();
+                return null;
+            }
+        } else if (chartType == ChartType.PIE) {
+            f1 = pieLabelFieldCombo.getValue();
+            f2 = pieValueFieldCombo.getValue();
+            if (f1 == null || f2 == null) {
+                notifications.create("Please select Label and Value fields").show();
+                return null;
+            }
+        } else {
+            notifications.create("Unsupported chart type").show();
+            return null;
+        }
+
+        // build JSON
+        ObjectNode node = objectMapper.createObjectNode();
+        if (chartType == ChartType.BAR) {
+            node.put("xField", f1);
+            node.put("yField", f2);
+        } else if (chartType == ChartType.PIE) {
+            node.put("labelField", f1);
+            node.put("valueField", f2);
+        }
+
+        return node.toString();
+    }
+
+    @Subscribe(id = "save", subject = "clickListener")
+    public void onSaveClick(final ClickEvent<JmixButton> event) {
+        if (dataset == null || chartType == null) {
+            notifications.create("Dataset or chart type is empty").show();
+            return;
+        }
+
+        // Lấy tên chart
+        String name = chartNameField.getValue();
+        if (name == null || name.isBlank()) {
+            notifications.create("Please enter chart name").show();
+            return;
+        }
+
+        String settingsJson = buildSettingsJsonFromUi();
+        if (settingsJson == null) {
+            return; // đã báo lỗi nếu thiếu field
+        }
+
+        // Tạo ChartConfig mới và lưu DB
+        ChartConfig config = dataManager.create(ChartConfig.class);
+        config.setName(name.trim());       // <-- bắt buộc set name
+        config.setDataset(dataset);
+        config.setChartType(chartType);
+        config.setSettingsJson(settingsJson);
+
+        dataManager.save(config);
+
+        notifications.create("ChartConfig has been saved").show();
+    }
+
+
 }
