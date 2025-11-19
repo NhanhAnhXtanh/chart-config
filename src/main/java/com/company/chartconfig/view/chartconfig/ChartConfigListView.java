@@ -4,6 +4,8 @@ import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.view.main.MainView;
 import com.company.chartconfig.view.newchartconfig.NewChartConfig;
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.grid.ItemClickEvent;
+import com.vaadin.flow.component.grid.ItemDoubleClickEvent;
 import com.vaadin.flow.router.Route;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.ViewNavigators;
@@ -41,6 +43,40 @@ public class ChartConfigListView extends StandardListView<ChartConfig> {
 
     @Subscribe("chartConfigsDataGrid.editAction")
     public void onChartConfigsDataGridEditAction(final ActionPerformedEvent event) {
+        ChartConfig selected = chartConfigsDataGrid.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.create("Please select a chart").show();
+            return;
+        }
+
+        viewNavigators
+                .view(this, ChartConfigView.class)
+                .withAfterNavigationHandler(navEvent -> {
+                    ChartConfigView view = navEvent.getView();
+                    view.initFromExisting(selected.getId());
+                })
+                .navigate();
+    }
+
+//    @Subscribe("chartConfigsDataGrid")
+//    public void onChartConfigsDataGridItemDoubleClick(final ItemDoubleClickEvent<ChartConfig> event) {
+//        ChartConfig selected = chartConfigsDataGrid.getSingleSelectedItem();
+//        if (selected == null) {
+//            notifications.create("Please select a chart").show();
+//            return;
+//        }
+//
+//        viewNavigators
+//                .view(this, ChartConfigView.class)
+//                .withAfterNavigationHandler(navEvent -> {
+//                    ChartConfigView view = navEvent.getView();
+//                    view.initFromExisting(selected.getId());
+//                })
+//                .navigate();
+//    }
+
+    @Subscribe("chartConfigsDataGrid")
+    public void onChartConfigsDataGridItemClick(final ItemClickEvent<ChartConfig> event) {
         ChartConfig selected = chartConfigsDataGrid.getSingleSelectedItem();
         if (selected == null) {
             notifications.create("Please select a chart").show();

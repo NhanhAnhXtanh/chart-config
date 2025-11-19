@@ -249,28 +249,38 @@ public class ChartConfigView extends StandardView {
     //  SAVE
     // ===================================================================
     @Subscribe(id = "save", subject = "clickListener")
-    public void onSaveClick(ClickEvent<JmixButton> event) {
+    public void onSaveClick(final ClickEvent<JmixButton> event) {
+        if (dataset == null || chartType == null) {
+            notifications.create("Dataset or chart type is empty").show();
+            return;
+        }
 
-        if (chartNameField.getValue() == null || chartNameField.getValue().toString().isBlank()) {
+        String name = chartNameField.getValue();
+        if (name == null || name.isBlank()) {
             notifications.create("Please enter chart name").show();
             return;
         }
 
         String settingsJson = buildSettingsJsonFromUi();
-        if (settingsJson == null) return;
+        if (settingsJson == null) {
+            return;
+        }
 
-        ChartConfig config =
-                (editingConfig != null) ? editingConfig : dataManager.create(ChartConfig.class);
+        ChartConfig config;
+        if (editingConfig != null) {
+            config = editingConfig;
+        } else {
+            config = dataManager.create(ChartConfig.class);
+        }
 
-        config.setName(chartNameField.getValue().toString());
+        config.setName(name.trim());
         config.setDataset(dataset);
         config.setChartType(chartType);
         config.setSettingsJson(settingsJson);
 
-        dataManager.save(config);
+        editingConfig = dataManager.save(config);
 
-        notifications.create("ChartConfig saved!").show();
-
+        notifications.create("ChartConfig has been saved").show();
         viewNavigators
                 .view(this, ChartConfigListView.class)
                 .navigate();
