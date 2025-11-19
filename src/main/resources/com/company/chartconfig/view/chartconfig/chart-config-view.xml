@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://chartConfigView.title">
+
+    <actions>
+        <action id="closeAction" type="view_close"/>
+    </actions>
+
+    <layout>
+        <hbox width="100%" height="100%">
+
+            <!-- SPLIT 1: Dataset + fields -->
+            <split width="100%">
+                <split width="40%">
+                    <vbox id="leftPane" width="25%" padding="true" spacing="true">
+                        <nativeLabel text="Dataset"/>
+                        <nativeLabel id="datasetNameLabel"/>
+
+                        <nativeLabel text="Chart type"/>
+                        <nativeLabel id="chartTypeLabel"/>
+
+                        <nativeLabel text="Fields"/>
+                        <textArea id="fieldsArea"
+                                  readOnly="true"
+                                  width="100%"
+                                  height="300px"/>
+                    </vbox>
+
+                    <!-- SPLIT 2: Chart config -->
+                    <vbox id="middlePane" width="25%" padding="true" spacing="true">
+                        <nativeLabel text="Chart configuration"/>
+
+                        <!-- Config BAR -->
+                        <vbox id="barConfigBox" width="100%" spacing="true">
+                            <nativeLabel text="X field"/>
+                            <comboBox id="barXFieldCombo"
+                                      width="100%"/>
+
+                            <nativeLabel text="Y field"/>
+                            <comboBox id="barYFieldCombo"
+                                      width="100%"/>
+                        </vbox>
+
+                        <!-- Config PIE -->
+                        <vbox id="pieConfigBox" width="100%" spacing="true">
+                            <nativeLabel text="Label field"/>
+                            <comboBox id="pieLabelFieldCombo"
+                                      width="100%"/>
+
+                            <nativeLabel text="Value field"/>
+                            <comboBox id="pieValueFieldCombo"
+                                      width="100%"/>
+                        </vbox>
+
+                        <hbox spacing="true">
+                            <button id="previewBtn" text="Preview"/>
+                            <button id="closeBtn" action="closeAction"/>
+                        </hbox>
+                    </vbox>
+                </split>
+
+                <!-- SPLIT 3: Chart preview -->
+                <vbox id="rightPane" width="50%" padding="true" spacing="true">
+                    <nativeLabel text="Preview"/>
+                    <vbox id="chartContainer"
+                          width="100%"
+                          height="100%"/>
+                </vbox>
+            </split>
+        </hbox>
+    </layout>
+</view>

@@ -11,14 +11,6 @@
             </fetchPlan>
             <loader id="chartConfigDl"/>
         </instance>
-
-        <collection id="datasetsDc"
-                    class="com.company.chartconfig.entity.Dataset">
-            <loader id="datasetsDl" readOnly="true">
-                <query><![CDATA[select e from Dataset e]]></query>
-            </loader>
-            <fetchPlan extends="_base"/>
-        </collection>
     </data>
 
     <facets>

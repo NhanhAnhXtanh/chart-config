@@ -1,6 +1,7 @@
 package com.company.chartconfig.service;
 
 import com.company.chartconfig.entity.Dataset;
+import com.company.chartconfig.enums.ChartType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jmix.chartsflowui.component.Chart;
@@ -159,6 +160,54 @@ public class ChartConfigService {
 
         return chart;
     }
+
+    public Chart buildPreviewChart(Dataset dataset, ChartType type, String settingsJson) {
+        if (dataset == null) {
+            throw new IllegalArgumentException("Dataset must not be null");
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("ChartType must not be null");
+        }
+        if (settingsJson == null || settingsJson.isBlank()) {
+            throw new IllegalArgumentException("settingsJson must not be empty");
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(settingsJson);
+
+            // Lấy items từ rawJson của dataset
+            List<MapDataItem> items = buildItems(dataset);
+
+            switch (type) {
+                case BAR -> {
+                    String xField = root.path("xField").asText(null);
+                    String yField = root.path("yField").asText(null);
+
+                    if (xField == null || yField == null) {
+                        throw new IllegalStateException("BAR chart requires xField and yField in settingsJson");
+                    }
+
+                    return createBarChart(xField, yField, items);
+                }
+                case PIE -> {
+                    String labelField = root.path("labelField").asText(null);
+                    String valueField = root.path("valueField").asText(null);
+
+                    if (labelField == null || valueField == null) {
+                        throw new IllegalStateException("PIE chart requires labelField and valueField in settingsJson");
+                    }
+
+                    return createPieChart(labelField, valueField, items);
+                }
+                default -> throw new UnsupportedOperationException("Unsupported chart type: " + type);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot build preview chart: " + e.getMessage(), e);
+        }
+    }
+
+
 
 
 }

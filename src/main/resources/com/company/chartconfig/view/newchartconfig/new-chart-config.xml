@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://newChartConfig.title">
+    <data>
+        <instance id="chartConfigDc"
+                  class="com.company.chartconfig.entity.ChartConfig">
+            <fetchPlan extends="_base">
+                <property name="dataset" fetchPlan="_base"/>
+            </fetchPlan>
+        </instance>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <actions>
+        <action id="createAction" type="list_create"/>
+    </actions>
+
+    <layout>
+        <vbox width="100%" padding="false">
+            <h2 text="Create a new chart"/>
+
+            <hbox width="100%">
+                <vbox width="100%" padding="false">
+                    <h4 text="Choose a dataset"/>
+                    <entityPicker id="datasetField"
+                                  property="dataset"
+                                  dataContainer="chartConfigDc"
+                                  width="100%">
+                        <actions>
+                            <action id="entityLookupAction" type="entity_lookup"/>
+                            <action id="entityClearAction" type="entity_clear"/>
+                        </actions>
+                    </entityPicker>
+                </vbox>
+
+                <vbox width="100%" padding="false">
+                    <h4 text="Choose chart type"/>
+                    <comboBox id="chartTypeField"
+                              property="chartType"
+                              datatype="enum"
+                              dataContainer="chartConfigDc"
+                              width="100%"/>
+                </vbox>
+            </hbox>
+
+            <hbox id="actions">
+                <button id="createBtn" text="Create"/>
+            </hbox>
+        </vbox>
+    </layout>
+</view>

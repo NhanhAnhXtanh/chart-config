@@ -5,6 +5,8 @@
         <item view="User.list" title="msg://com.company.chartconfig.view.user/UserListView.title"/>
         <item view="Dataset.list" title="msg://com.company.chartconfig.view.dataset/datasetListView.title"/>
         <item view="ChartConfig.list" title="msg://com.company.chartconfig.view.chartconfig/chartConfigListView.title"/>
+        <item view="ChartConfigView" title="msg://com.company.chartconfig.view.chartconfig/chartConfigView.title"/>
+        <item view="NewChartConfig" title="msg://com.company.chartconfig.view.newchartconfig/newChartConfig.title"/>
     </menu>
 
 </menu-config>

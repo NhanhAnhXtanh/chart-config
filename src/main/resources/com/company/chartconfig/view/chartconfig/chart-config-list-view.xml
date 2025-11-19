@@ -34,7 +34,7 @@
         </genericFilter>
         <hbox id="buttonsPanel" classNames="buttons-panel">
             <startSlot>
-                <button id="createButton" action="chartConfigsDataGrid.createAction"/>
+                <button id="createButton"/>
                 <button id="editButton" action="chartConfigsDataGrid.editAction"/>
                 <button id="removeButton" action="chartConfigsDataGrid.removeAction"/>
             </startSlot>
