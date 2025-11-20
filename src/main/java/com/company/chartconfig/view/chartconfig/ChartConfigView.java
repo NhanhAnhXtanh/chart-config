@@ -131,18 +131,23 @@ public class ChartConfigView extends StandardView {
         NativeLabel lbl = new NativeLabel(displayText);
 
         lbl.getStyle()
-                .set("padding", "6px 10px")
+                // --- Layout Fix ---
+                .set("display", "block")
+                .set("width", "100%")
+                .set("box-sizing", "border-box")
+                // ------------------
+                .set("padding", "8px 12px") // Padding đẹp hơn
                 .set("border", "1px solid #ccc")
                 .set("cursor", "grab")
-                .set("border-radius", "14px")
-                .set("background-color", "#e7d7d7")
+                .set("border-radius", "8px") // Bo góc mềm hơn
+                .set("background-color", "#ffffff") // Nền trắng cho sạch
                 .set("font-size", "14px")
                 .set("user-select", "none")
-                .set("margin-bottom", "4px");
+                .set("margin-bottom", "0")
+                .set("box-shadow", "0 1px 3px rgba(0,0,0,0.05)"); // Thêm bóng nhẹ
 
         lbl.getElement().setAttribute("data-field-name", name);
 
-        // Dùng Vaadin DragSource thay vì JS
         DragSource<NativeLabel> dragSource = DragSource.create(lbl);
         dragSource.setDragData(name);
 

@@ -1,21 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
-        <vbox id="root" spacing="true" css="align-items:start; gap:12px;">
-            <span text="X Axis" css="font-weight:500; color:#444;"/>
-            <div id="xDropZone"
-                 css="width:220px; height:50px; border:2px dashed #b0bec5;
-                        border-radius:8px; display:flex; align-items:center; justify-content:center;
-                        background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
-                <span></span>
-            </div>
+        <!-- Root VBox -->
+        <vbox id="root" width="100%" spacing="false" css="gap:12px; overflow: hidden;">
 
-            <span text="Y Axis" css="font-weight:500; color:#444;"/>
-            <div id="yDropZone"
-                 css="width:220px; height:50px; border:2px dashed #b0bec5;
-                        border-radius:8px; display:flex; align-items:center; justify-content:center;
-                        background-color:#fafafa; transition:all 0.25s ease; font-weight:500; color:#333;">
-                <span></span>
-            </div>
+            <!-- X AXIS CONFIG -->
+            <vbox width="100%" spacing="false" css="gap: 4px;">
+                <span text="Trục X (X Axis)" css="font-weight: 600; font-size: 13px; color: #555;"/>
+
+                <!-- Sử dụng class chung "chart-drop-zone" -->
+                <div id="xDropZone" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- Y AXIS CONFIG -->
+            <vbox width="100%" spacing="false" css="gap: 4px;">
+                <span text="Trục Y (Y Axis)" css="font-weight: 600; font-size: 13px; color: #555;"/>
+
+                <!-- Sử dụng class chung "chart-drop-zone" -->
+                <div id="yDropZone" classNames="chart-drop-zone"/>
+            </vbox>
+
         </vbox>
     </content>
 </fragment>

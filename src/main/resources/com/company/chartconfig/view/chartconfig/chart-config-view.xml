@@ -7,10 +7,10 @@
     </actions>
 
     <!-- 🔹 GLOBAL LAYOUT -->
-    <layout css="padding: 24px; background-color: #f4f6f8; gap: 20px; height: 100%;">
+    <layout css="padding: 16px; background-color: #f4f6f8; gap: 16px; height: 100%; display: flex; flex-direction: column; box-sizing: border-box;">
 
         <!-- 🔹 HEADER -->
-        <vbox width="100%" css="background-color: #ffffff; padding: 16px 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <vbox width="100%" css="background-color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-shrink: 0;">
             <hbox spacing="true" css="gap: 40px; align-items: center;">
                 <hbox css="gap: 8px; align-items: center;">
                     <icon icon="DATABASE" css="color: var(--lumo-primary-color); width: 18px; height: 18px;"/>
@@ -26,82 +26,97 @@
             </hbox>
         </vbox>
 
-        <!-- 🔹 TOOLBAR: Input dãn rộng tối đa -->
-        <hbox width="40%" height="100px" css="align-items: center; gap: 16px;">
-            <!-- Đã thay đổi: width="100%" và thêm flex-grow để input dài ra -->
+        <!-- 🔹 TOOLBAR -->
+        <hbox width="100%" css="align-items: center; gap: 16px; flex-shrink: 0;">
             <textField id="chartNameField"
                        placeholder="Nhập tên biểu đồ..."
-                       height="50px"
-                       css="flex-grow: 1; font-size: 18px; --lumo-text-field-size: 50px;"
+                       height="45px"
+                       css="flex-grow: 1; font-size: 15px;"
                        helperText="Tên hiển thị trên dashboard">
                 <prefix>
-                    <icon icon="PENCIL" css="width: 20px; height: 20px;"/>
+                    <icon icon="PENCIL" css="width: 18px; height: 18px;"/>
                 </prefix>
             </textField>
 
             <button id="save"
                     text="Lưu cấu hình"
                     icon="CHECK"
-                    height="50px"
+                    height="45px"
                     themeNames="primary"
-                    css="border-radius: 8px; padding: 0 32px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
+                    css="border-radius: 8px; padding: 0 32px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
         </hbox>
 
-        <!-- 🔹 MAIN CONTENT -->
-        <hbox width="100%" height="100%" css="gap: 20px; align-items: stretch;">
+        <!-- 🔹 MAIN CONTENT: SPLIT LAYOUT -->
+        <!--
+             LƯU Ý: width="100%" height="100%" chỉ áp dụng cho SPLIT cha.
+             Các VBOX con KHÔNG ĐƯỢC set width="100%" nếu có margin.
+        -->
 
-            <!-- 🔸 LEFT PANE: Fields List (Tăng lên 25%) -->
-            <vbox width="25%"
-                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 16px; border: 1px solid rgba(0,0,0,0.05);">
+        <!-- OUTER SPLIT: Chia (Trái+Giữa) 40% | (Phải) 60% -->
+        <split id="mainSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="40" themeNames="small">
 
-                <hbox css="align-items: center; gap: 8px; margin-bottom: 8px;">
-                    <icon icon="LIST" css="color: var(--lumo-secondary-text-color); width: 16px;"/>
-                    <nativeLabel text="Danh sách trường" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;"/>
-                </hbox>
+            <!-- 🟧 VÙNG BÊN TRÁI (Chứa Fields + Config) -->
+            <!-- INNER SPLIT: Chia Fields 45% | Config 55% -->
+            <split id="innerSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="45" themeNames="small">
 
-                <nativeLabel text="Kéo thả vào trục X/Y" css="font-size: 30px; color: var(--lumo-secondary-text-color); margin-bottom: -10px;"/>
-
-                <vbox id="fieldsList"
-                      width="100%"
+                <!-- 🔸 CỘT 1: Fields List -->
+                <!-- Đã xóa width="100%", giữ height="100%" -->
+                <vbox id="leftPane"
                       height="100%"
-                      css="overflow-y: auto; gap: 8px; padding-right: 4px;"/>
-            </vbox>
+                      css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 16px; border: 1px solid rgba(0,0,0,0.05); margin-right: 6px; box-sizing: border-box;">
 
-            <!-- 🔸 MIDDLE PANE: Configuration (Giữ nguyên 25%) -->
-            <vbox width="25%"
-                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 20px; border: 1px solid rgba(0,0,0,0.05);">
+                    <hbox css="align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <icon icon="LIST" css="color: var(--lumo-secondary-text-color); width: 16px;"/>
+                        <nativeLabel text="Danh sách trường" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 14px; text-transform: uppercase;"/>
+                    </hbox>
 
-                <hbox css="align-items: center; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 12px;">
-                    <icon icon="COG" css="color: var(--lumo-secondary-text-color);"/>
-                    <nativeLabel text="Cấu hình trục" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 16px;"/>
-                </hbox>
+                    <nativeLabel text="Kéo thả vào trục X/Y" css="font-size: 12px; color: var(--lumo-secondary-text-color); margin-bottom: 10px;"/>
 
-                <vbox id="configContainer" width="100%" css="gap: 16px; flex-grow: 1;">
-                    <fragment id="barConfig"
-                              class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
-
-                    <fragment id="pieConfig"
-                              class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
+                    <vbox id="fieldsList"
+                          width="100%"
+                          height="100%"
+                          css="overflow-y: auto; gap: 8px; padding-right: 4px;"/>
                 </vbox>
 
-                <vbox width="100%" css="gap: 10px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--lumo-contrast-10pct);">
-                    <button id="previewBtn"
-                            text="Xem trước (Preview)"
-                            width="100%"
-                            themeNames="primary outlined"
-                            css="border-radius: 8px;"/>
-                    <button id="closeBtn"
-                            action="closeAction"
-                            text="Hủy bỏ"
-                            width="100%"
-                            themeNames="tertiary error"
-                            css="border-radius: 8px;"/>
-                </vbox>
-            </vbox>
+                <!-- 🔸 CỘT 2: Config -->
+                <!-- Đã xóa width="100%", giữ height="100%" -->
+                <vbox id="middlePane"
+                      height="100%"
+                      css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 20px; border: 1px solid rgba(0,0,0,0.05); margin-left: 6px; margin-right: 6px; box-sizing: border-box;">
 
-            <!-- 🔸 RIGHT PANE: Preview Area (Giảm xuống 50%) -->
-            <vbox width="50%"
-                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 24px; border: 1px solid rgba(0,0,0,0.05);">
+                    <hbox css="align-items: center; gap: 8px; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 3px;">
+                        <icon icon="COG" css="color: var(--lumo-secondary-text-color);"/>
+                        <nativeLabel text="Cấu hình trục" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 16px;"/>
+                    </hbox>
+
+                    <vbox id="configContainer" width="100%" css=" flex-grow: 1; overflow-y: auto;">
+                        <fragment id="barConfig"
+                                  class="com.company.chartconfig.view.barconfigfragment.BarConfigFragment"/>
+                        <fragment id="pieConfig"
+                                  class="com.company.chartconfig.view.pieconfigfragment.PieConfigFragment"/>
+                    </vbox>
+
+                    <vbox width="100%" css="gap: 10px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--lumo-contrast-10pct); flex-shrink: 0;">
+                        <button id="previewBtn"
+                                text="Xem trước"
+                                width="100%"
+                                themeNames="primary outlined"
+                                css="border-radius: 8px;"/>
+                        <button id="closeBtn"
+                                action="closeAction"
+                                text="Hủy bỏ"
+                                width="100%"
+                                themeNames="tertiary error"
+                                css="border-radius: 8px;"/>
+                    </vbox>
+                </vbox>
+            </split>
+
+            <!-- 🟧 VÙNG BÊN PHẢI: Preview -->
+            <!-- Đã xóa width="100%", giữ height="100%" -->
+            <vbox id="rightPane"
+                  height="100%"
+                  css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 24px; border: 1px solid rgba(0,0,0,0.05); margin-left: 6px; box-sizing: border-box;">
 
                 <hbox css="justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <nativeLabel text="Biểu đồ hiển thị" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 18px;"/>
@@ -114,6 +129,6 @@
                       css="background-color: #fafafa; border-radius: 8px; border: 1px dashed #d0d0d0; justify-content: center; align-items: center; overflow: hidden;"/>
             </vbox>
 
-        </hbox>
+        </split>
     </layout>
 </view>
