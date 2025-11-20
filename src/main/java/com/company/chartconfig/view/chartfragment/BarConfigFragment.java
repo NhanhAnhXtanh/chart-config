@@ -1,8 +1,9 @@
 package com.company.chartconfig.view.chartfragment;
 
 import com.company.chartconfig.utils.DropZoneUtils;
-import com.company.chartconfig.view.config.common.ChartConfigFragment;
 import com.company.chartconfig.utils.FilterRule;
+import com.company.chartconfig.view.config.common.ChartConfigFragment;
+import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,32 +32,39 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
 
     // Internal State
     private String xAxis;
-    private final List<String> metrics = new ArrayList<>();
+    private final List<MetricConfig> metrics = new ArrayList<>();
     private final List<String> dimensions = new ArrayList<>();
     private final List<FilterRule> filters = new ArrayList<>();
 
+    private List<String> availableFields = new ArrayList<>();
+
     @Subscribe
     public void onReady(ReadyEvent event) {
-        // Setup listeners
+        // 1. Setup Listeners
         DropZoneUtils.setup(xDrop, v -> this.xAxis = v);
-        DropZoneUtils.setupMulti(metricsDrop, metrics);
+
+        // Metric dùng setup riêng biệt (Có Dialog)
+        DropZoneUtils.setupMetricZone(metricsDrop, metrics, availableFields, this::refreshUI);
+
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
         DropZoneUtils.setupFilter(filtersDrop, filters);
 
-        // Refresh UI from state (QUAN TRỌNG ĐỂ FIX LỖI LOAD DỮ LIỆU)
+        // 2. Refresh UI (Để hiển thị dữ liệu nếu được load từ DB trước khi Ready)
         refreshUI();
     }
 
     private void refreshUI() {
-        DropZoneUtils.updateVisuals(xDrop, this.xAxis);
-        DropZoneUtils.updateMulti(metricsDrop, this.metrics);
-        DropZoneUtils.updateMulti(dimensionsDrop, this.dimensions);
-        DropZoneUtils.updateFilters(filtersDrop, this.filters);
+        if (xDrop != null) {
+            DropZoneUtils.updateVisuals(xDrop, xAxis, val -> this.xAxis = val); // Truyền callback update
+            DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, availableFields, () -> {});
+            DropZoneUtils.updateMulti(dimensionsDrop, dimensions);
+            DropZoneUtils.updateFilters(filtersDrop, filters);
+        }
     }
 
     @Override
     public void setAvailableFields(List<String> fields) {
-        // Bar chart logic không cần lưu list này, nhưng interface yêu cầu
+        this.availableFields = fields;
     }
 
     @Override
@@ -64,12 +72,15 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         ObjectNode node = objectMapper.createObjectNode();
         node.put("xAxis", xAxis);
 
+        // Serialize List<MetricConfig>
         ArrayNode mNode = node.putArray("metrics");
-        metrics.forEach(mNode::add);
+        metrics.forEach(mNode::addPOJO);
 
+        // Serialize List<String>
         ArrayNode dNode = node.putArray("dimensions");
         dimensions.forEach(dNode::add);
 
+        // Serialize List<FilterRule>
         ArrayNode fNode = node.putArray("filters");
         for (FilterRule f : filters) {
             ObjectNode fo = node.objectNode();
@@ -87,18 +98,28 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
 
         this.xAxis = node.path("xAxis").asText(null);
 
+        // Deserialize Metrics
         this.metrics.clear();
         JsonNode mNode = node.path("metrics");
-        if (mNode.isArray()) mNode.forEach(n -> this.metrics.add(n.asText()));
+        if (mNode.isArray()) {
+            mNode.forEach(n -> {
+                try {
+                    metrics.add(objectMapper.treeToValue(n, MetricConfig.class));
+                } catch (Exception e) { e.printStackTrace(); }
+            });
+        }
 
+        // Deserialize Dimensions
         this.dimensions.clear();
         JsonNode dNode = node.path("dimensions");
-        if (dNode.isArray()) dNode.forEach(n -> this.dimensions.add(n.asText()));
+        if (dNode.isArray()) {
+            dNode.forEach(n -> dimensions.add(n.asText()));
+        }
 
-        // Load Filters (Tự implement parsing JSON -> FilterRule)
+        // Deserialize Filters (Nếu cần)
         // ...
 
-        // Update UI nếu đã attach
+        // Update UI ngay lập tức nếu đã attach
         if (xDrop != null) refreshUI();
     }
 
@@ -107,25 +128,25 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         return xAxis != null && !xAxis.isBlank() && !metrics.isEmpty();
     }
 
-    // --- MIGRATION ---
+    // --- MIGRATION SUPPORT ---
     @Override
     public String getMainDimension() { return xAxis; }
 
     @Override
     public void setMainDimension(String field) {
         this.xAxis = field;
-        if (xDrop != null) DropZoneUtils.updateVisuals(xDrop, field);
+        if (xDrop != null) refreshUI();
     }
 
     @Override
     public String getMainMetric() {
-        return metrics.isEmpty() ? null : metrics.get(0);
+        return metrics.isEmpty() ? null : metrics.get(0).getColumn();
     }
 
     @Override
     public void setMainMetric(String field) {
         this.metrics.clear();
-        if (field != null) this.metrics.add(field);
-        if (metricsDrop != null) DropZoneUtils.updateMulti(metricsDrop, metrics);
+        if (field != null) this.metrics.add(new MetricConfig(field));
+        if (metricsDrop != null) refreshUI();
     }
 }

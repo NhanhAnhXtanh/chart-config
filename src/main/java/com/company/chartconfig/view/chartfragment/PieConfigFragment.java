@@ -1,7 +1,7 @@
 package com.company.chartconfig.view.chartfragment;
 
 import com.company.chartconfig.utils.DropZoneUtils;
-import com.company.chartconfig.view.config.common.ChartConfigFragment; // Import Interface chung
+import com.company.chartconfig.view.config.common.ChartConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,37 +27,38 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
     @ViewComponent
     private Div valueDropZone;
 
-    // Internal State (Lưu trữ dữ liệu)
+    // Internal State
     private String labelField;
     private String valueField;
 
     @Subscribe
     public void onReady(ReadyEvent event) {
-        // 1. Setup Logic kéo thả
+        // Setup Listeners
         DropZoneUtils.setup(labelDropZone, val -> this.labelField = val);
         DropZoneUtils.setup(valueDropZone, val -> this.valueField = val);
 
-        // 2. Vẽ lại UI (quan trọng để hiển thị dữ liệu khi Edit)
         refreshUI();
     }
 
     private void refreshUI() {
-        DropZoneUtils.updateVisuals(labelDropZone, this.labelField);
-        DropZoneUtils.updateVisuals(valueDropZone, this.valueField);
+        // Cập nhật UI và truyền callback để xử lý nút Xóa
+        if (labelDropZone != null) {
+            DropZoneUtils.updateVisuals(labelDropZone, this.labelField, val -> this.labelField = val);
+            DropZoneUtils.updateVisuals(valueDropZone, this.valueField, val -> this.valueField = val);
+        }
     }
 
     // ============================================================
-    // IMPLEMENT INTERFACE: ChartConfigFragment
+    // IMPLEMENT INTERFACE
     // ============================================================
 
     @Override
     public void setAvailableFields(List<String> fields) {
-        // Pie chart có thể không cần lưu list này
+        // Pie chart đơn giản, chưa cần list này (trừ khi mở rộng sau này)
     }
 
     @Override
     public ObjectNode getConfigurationJson() {
-        // Đóng gói dữ liệu thành JSON để lưu
         ObjectNode node = objectMapper.createObjectNode();
         node.put("labelField", labelField);
         node.put("valueField", valueField);
@@ -66,13 +67,11 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
 
     @Override
     public void setConfigurationJson(JsonNode node) {
-        // Parse JSON đổ vào biến
         if (node == null) return;
 
         this.labelField = node.path("labelField").asText(null);
         this.valueField = node.path("valueField").asText(null);
 
-        // Cập nhật UI nếu Fragment đã sẵn sàng
         if (labelDropZone != null) {
             refreshUI();
         }
@@ -80,36 +79,31 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
 
     @Override
     public boolean isValid() {
-        // Validate bắt buộc phải có Label và Value
         return labelField != null && !labelField.isBlank()
                 && valueField != null && !valueField.isBlank();
     }
 
-    // ============================================================
-    // MIGRATION SUPPORT (Chuyển đổi dữ liệu giữa các Chart)
-    // ============================================================
+    // --- MIGRATION SUPPORT ---
 
     @Override
     public String getMainDimension() {
-        // Với Pie, Dimension chính là Label (Phần chữ)
         return labelField;
     }
 
     @Override
     public void setMainDimension(String field) {
         this.labelField = field;
-        if (labelDropZone != null) DropZoneUtils.updateVisuals(labelDropZone, field);
+        if (labelDropZone != null) refreshUI();
     }
 
     @Override
     public String getMainMetric() {
-        // Với Pie, Metric chính là Value (Phần số)
         return valueField;
     }
 
     @Override
     public void setMainMetric(String field) {
         this.valueField = field;
-        if (valueDropZone != null) DropZoneUtils.updateVisuals(valueDropZone, field);
+        if (valueDropZone != null) refreshUI();
     }
 }
