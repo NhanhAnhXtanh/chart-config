@@ -4,11 +4,14 @@ import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
+import com.company.chartconfig.utils.DropZoneUtils;
+import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.barconfigfragment.BarConfigFragment;
 import com.company.chartconfig.view.main.MainView;
 import com.company.chartconfig.view.pieconfigfragment.PieConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.dnd.DragSource;
@@ -87,9 +90,27 @@ public class ChartConfigView extends StandardView {
 
             if (chartType == ChartType.BAR) {
                 barConfig.setFields(fieldNames);
-                barConfig.setXField(node.path("xField").asText(null));
-                barConfig.setYField(node.path("yField").asText(null));
+
+                String x = node.path("xAxis").asText(null);
+                if (x != null) {
+                    DropZoneUtils.updateVisuals(barConfig.getxDrop(), x);
+                }
+
+                List<String> metrics = new ArrayList<>();
+                JsonNode metricsNode = node.path("metrics");
+                if (metricsNode.isArray()) {
+                    metricsNode.forEach(m -> metrics.add(m.asText()));
+                }
+                DropZoneUtils.updateMulti(barConfig.getMetricsDrop(), metrics);
+
+                List<String> dims = new ArrayList<>();
+                JsonNode dimsNode = node.path("dimensions");
+                if (dimsNode.isArray()) {
+                    dimsNode.forEach(d -> dims.add(d.asText()));
+                }
+                DropZoneUtils.updateMulti(barConfig.getDimensionsDrop(), dims);
             }
+
             if (chartType == ChartType.PIE) {
                 pieConfig.setFields(fieldNames);
                 pieConfig.setLabelField(node.path("labelField").asText(null));
@@ -201,16 +222,33 @@ public class ChartConfigView extends StandardView {
         ObjectNode node = objectMapper.createObjectNode();
 
         if (chartType == ChartType.BAR) {
-            String x = barConfig.getXField();
-            String y = barConfig.getYField();
+            String x = barConfig.getxAxis();
+            List<String> metrics = barConfig.getMetrics();
+            List<String> dims = barConfig.getDimensions();
+            List<FilterRule> filters = barConfig.getFilters();
 
-            if (x == null || x.isBlank() || y == null || y.isBlank()) {
-                notifications.create("Please select X and Y").show();
+            if (x == null || x.isBlank()) {
+                notifications.create("Please select X").show();
                 return null;
             }
 
-            node.put("xField", x);
-            node.put("yField", y);
+            node.put("xAxis", x);
+
+            ArrayNode metricsNode = node.putArray("metrics");
+            metrics.forEach(metricsNode::add);
+
+            ArrayNode dimsNode = node.putArray("dimensions");
+            dims.forEach(dimsNode::add);
+
+            ArrayNode filterNode = node.putArray("filters");
+            for (FilterRule f : filters) {
+                ObjectNode fo = node.objectNode();
+                fo.put("column", f.getColumn());
+                fo.put("operator", f.getOperator());
+                fo.put("value", f.getValue());
+                filterNode.add(fo);
+            }
+
         }
 
         if (chartType == ChartType.PIE) {

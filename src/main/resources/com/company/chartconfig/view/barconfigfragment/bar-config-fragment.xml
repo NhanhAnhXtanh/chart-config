@@ -4,21 +4,30 @@
         <!-- Root VBox -->
         <vbox id="root" width="100%" spacing="false" css="gap:12px; overflow: hidden;">
 
-            <!-- X AXIS CONFIG -->
-            <vbox width="100%" spacing="false" css="gap: 4px;">
-                <span text="Trục X (X Axis)" css="font-weight: 600; font-size: 13px; color: #555;"/>
-
-                <!-- Sử dụng class chung "chart-drop-zone" -->
-                <div id="xDropZone" classNames="chart-drop-zone"/>
+            <!-- X Axis -->
+            <vbox spacing="false">
+                <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
+                <div id="xDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- Y AXIS CONFIG -->
-            <vbox width="100%" spacing="false" css="gap: 4px;">
-                <span text="Trục Y (Y Axis)" css="font-weight: 600; font-size: 13px; color: #555;"/>
-
-                <!-- Sử dụng class chung "chart-drop-zone" -->
-                <div id="yDropZone" classNames="chart-drop-zone"/>
+            <!-- Metrics -->
+            <vbox spacing="false">
+                <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
+                <div id="metricsDrop" classNames="chart-drop-zone"/>
             </vbox>
+
+            <!-- Dimensions -->
+            <vbox spacing="false">
+                <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
+                <div id="dimensionsDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- Filters -->
+            <vbox spacing="false">
+                <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
+                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
 
         </vbox>
     </content>

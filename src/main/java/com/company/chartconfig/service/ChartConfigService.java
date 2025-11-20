@@ -162,8 +162,14 @@ public class ChartConfigService {
 
             switch (type) {
                 case BAR -> {
-                    String xField = root.path("xField").asText(null);
-                    String yField = root.path("yField").asText(null);
+                    String xField = root.path("xAxis").asText(null);
+
+                    JsonNode metricsNode = root.path("metrics");
+                    if (!metricsNode.isArray() || metricsNode.isEmpty()) {
+                        throw new IllegalStateException("BAR chart requires at least 1 metric");
+                    }
+
+                    String yField = metricsNode.get(0).asText(); // dùng metric đầu tiên
 
                     if (xField == null || yField == null) {
                         throw new IllegalStateException("BAR chart requires xField and yField in settingsJson");
