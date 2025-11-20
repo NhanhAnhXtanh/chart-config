@@ -3,22 +3,17 @@
     <content>
         <!-- Root VBox -->
         <vbox id="root" width="100%" spacing="false" padding="false" >
-
-            <!-- X Axis -->
                 <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
                 <div id="xDrop" classNames="chart-drop-zone"/>
 
-            <!-- Metrics -->
                 <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
                 <div id="metricsDrop" classNames="chart-drop-zone"/>
-                <div id="xDropZone" classNames="chart-drop-zone"/>
-            <!-- Dimensions -->
+
                 <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
                 <div id="dimensionsDrop" classNames="chart-drop-zone"/>
 
                 <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
-
         </vbox>
     </content>
 </fragment>

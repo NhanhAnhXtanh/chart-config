@@ -1,142 +1,109 @@
 /* =========================================
-   DROP ZONE - RELATIVE SCALING (Dựa trên code của bạn)
+   DROP ZONE STYLING - FIX LAYOUT
    ========================================= */
 
 .chart-drop-zone {
-    /* CHIỀU RỘNG: Luôn chiếm 100% khung chứa */
+    /* KÍCH THƯỚC */
     width: 100%;
+    min-height: 50px; /* Chiều cao vừa đủ, không quá to */
+    box-sizing: border-box;
+    padding: 6px;
+    margin-top: 4px;
 
-    /* CHIỀU CAO & PADDING: Dùng em để ăn theo cỡ chữ */
-    min-height: 2.5em;
-    padding: 0.3em 0.6em;
+    /* GIAO DIỆN */
+    border: 2px dashed #94a3b8;
+    border-radius: 8px;
+    background-color: #f8fafc;
 
-    /* FONT: Dùng rem để theo chuẩn của trình duyệt (Chốt chặn tỷ lệ) */
-    font-size: 0.9rem;
-
-    /* BORDER: Thay 1px bằng 0.07em để viền dày lên khi zoom */
-    border: 0.07em dashed #94a3b8;
-    border-radius: 0.4em;
-
+    /* LAYOUT: QUAN TRỌNG ĐỂ KHÔNG BỊ DÍU */
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
 
-    background-color: #f8fafc;
-    transition: all 0.2s ease-in-out;
-    box-sizing: border-box;
+    justify-content: center;
+
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s ease;
 }
 
-/* Hiệu ứng Drag Over */
+/* Khi đã có dữ liệu (Class này được thêm bởi Java) */
+.chart-drop-zone.filled {
+    justify-content: flex-start; /* Căn trái để các chip xếp hàng */
+    background-color: #ffffff;
+    border: 2px solid #60a5fa;   /* Viền liền màu xanh */
+}
+
+/* Hiệu ứng khi kéo vào */
 .chart-drop-zone.drag-over {
     background-color: #eff6ff !important;
     border-color: #2563eb !important;
     border-style: solid;
-
-    /* Shadow tính bằng em */
-    box-shadow: 0 0 0 0.15em rgba(37, 99, 235, 0.1);
+    transform: scale(1.01);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* Trạng thái đã điền (Filled) */
-.chart-drop-zone.filled {
-    /* Viền co giãn */
-    border: 0.07em solid #3b82f6;
-    background-color: #ffffff;
-
-    /* Padding co giãn */
-    padding: 0.15em 0.3em;
-
-    /* Giữ nguyên logic căn giữa của bạn */
-    display: flex;
+/* =========================================
+   CHIP STYLING (Thẻ dữ liệu)
+   ========================================= */
+.chart-drop-zone-chip {
+    /* BOX MODEL */
+    box-sizing: border-box;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-}
 
-/* --- CHIP (Cục dữ liệu) --- */
-./* --- CHIP (Cục dữ liệu) - Sửa lỗi co giãn --- */
-.chart-drop-zone-chip {
-    /* QUAN TRỌNG: Để padding tính vào trong kích thước, không làm phình to box */
-    box-sizing: border-box;
+    /* SIZE & SPACING: SỬA LỖI DÍU Ở ĐÂY */
+    padding: 4px 12px;       /* Padding chuẩn (trên dưới 4px, trái phải 12px) */
+    border-radius: 16px;     /* Bo tròn như viên thuốc */
 
+    /* MÀU SẮC */
     background: #eff6ff;
+    border: 1px solid #bfdbfe;
     color: #1e40af;
 
-    /* Viền co giãn theo em */
-    border: 0.07em solid #bfdbfe;
+    /* TEXT */
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;     /* Không xuống dòng trong chip */
 
-    /* Padding: Dùng em để khi font to lên, padding to lên theo đúng tỷ lệ */
-    padding: 0.1em 3.8em;
-
-    border-radius: 0.25em;
-
-    /* Font size kế thừa từ cha (1em = 100% cỡ chữ của cha) */
-    font-size: 1em;
-    font-weight: 500;
-
-    /* Line-height: QUAN TRỌNG để chiều cao background ăn theo chữ */
-    line-height: 1.5;
-
-    /* Flexbox settings để nội dung bên trong căn chỉnh chuẩn */
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Căn giữa text trong chip nếu nó rộng */
-
-    /* Xử lý kích thước trong môi trường Flex của cha */
-    flex: 0 1 auto; /* Cho phép co nhỏ (shrink) nhưng không tự giãn quá đà */
+    /* XỬ LÝ KHI TÊN QUÁ DÀI */
     max-width: 100%;
-
-    /* Chiều cao tự động để ôm trọn padding + line-height */
-    height: auto;
-    min-height: 2em; /* Đảm bảo độ cao tối thiểu đẹp mắt */
-
-    /* Xử lý text dài */
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-/* --- HINT TEXT --- */
-.chart-drop-zone-hint {
-    color: #94a3b8;
-    font-size: 0.9em;
-    font-weight: 400;
 
     user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* =========================================
+   HINT TEXT (Chữ "Kéo thả vào đây")
+   ========================================= */
+.chart-drop-zone-hint {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-style: italic;
     pointer-events: none;
+    user-select: none;
 
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5em;
-    width: 100%;
+    gap: 6px;
 }
 
-/* Icon dấu cộng */
 .chart-drop-zone-hint::before {
     content: "+";
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
-    /* Hình tròn co giãn */
-    width: 1.4em;
-    height: 1.4em;
-
-    background-color: #e2e8f0;
+    width: 20px;
+    height: 20px;
+    background: #e2e8f0;
     color: #64748b;
     border-radius: 50%;
-
-    font-size: 1.1em;
+    font-size: 16px;
     font-weight: bold;
     line-height: 1;
-}
-
-/* RESPONSIVE SCREEN SIZE */
-@media (max-width: 600px) {
-    .chart-drop-zone {
-        /* Khi màn hình nhỏ, giảm font gốc -> mọi thứ tự bé lại theo tỷ lệ */
-        font-size: 0.8rem;
-    }
 }

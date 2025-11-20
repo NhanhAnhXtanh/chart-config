@@ -4,16 +4,13 @@ import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
-import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.chartfragment.BarConfigFragment;
+import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
 import com.company.chartconfig.view.main.MainView;
 import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -34,23 +31,13 @@ import java.util.*;
 @ViewController(id = "ChartConfigView")
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
-    @ViewComponent
-    private TypedTextField<String> searchField;
 
-    @Subscribe
-    public void onInit(final InitEvent event) {
-        searchField.addKeyPressListener(Key.ENTER, keyPressEvent -> doSearch());
+    // Map quản lý các Strategy (Fragment)
+    private final Map<ChartType, ChartConfigFragment> fragmentMap = new HashMap<>();
 
-    }
-    private void doSearch() {
-        String searchValue = searchField.getValue();
-
-    }
     private UUID datasetId;
     private ChartType chartType;
-
     private Dataset dataset;
-    private List<String> fieldNames = new ArrayList<>();
     private ChartConfig editingConfig;
 
     @Autowired private DataManager dataManager;
@@ -59,113 +46,131 @@ public class ChartConfigView extends StandardView {
     @Autowired private ChartConfigService chartConfigService;
     @Autowired private ViewNavigators viewNavigators;
 
-    // Components
     @ViewComponent private NativeLabel datasetNameLabel;
     @ViewComponent private NativeLabel chartTypeLabel;
-    @ViewComponent private BarConfigFragment barConfig;
-    @ViewComponent private PieConfigFragment pieConfig;
-    @ViewComponent private VerticalLayout chartContainer;
     @ViewComponent private TypedTextField<Object> chartNameField;
     @ViewComponent private VerticalLayout fieldsList;
+    @ViewComponent private VerticalLayout chartContainer;
 
-    // =============================
-    // CREATE MODE
-    // =============================
+    // Inject Fragments
+    @ViewComponent private BarConfigFragment barConfig;
+    @ViewComponent private PieConfigFragment pieConfig;
+
+    @Subscribe
+    public void onInit(final InitEvent event) {
+        // Đăng ký các fragment vào Map
+        fragmentMap.put(ChartType.BAR, barConfig);
+        fragmentMap.put(ChartType.PIE, pieConfig);
+        // fragmentMap.put(ChartType.LINE, lineConfig); // Dễ dàng mở rộng
+    }
+
     public void initParams(UUID datasetId, ChartType chartType) {
         this.editingConfig = null;
         this.datasetId = datasetId;
         this.chartType = chartType;
-        loadDatasetAndFields();
-        setupLeftPane();
-        setupMiddlePane();
+        loadDatasetCommon();
+        switchFragment(chartType);
     }
 
-    // =============================
-    // EDIT MODE
-    // =============================
     public void initFromExisting(UUID chartConfigId) {
-        ChartConfig cfg = dataManager.load(ChartConfig.class)
-                .id(chartConfigId).one();
+        this.editingConfig = dataManager.load(ChartConfig.class).id(chartConfigId).one();
+        this.datasetId = editingConfig.getDataset().getId();
+        this.chartType = editingConfig.getChartType();
+        this.chartNameField.setValue(editingConfig.getName());
 
-        this.editingConfig = cfg;
-        this.datasetId = cfg.getDataset().getId();
-        this.chartType = cfg.getChartType();
+        loadDatasetCommon();
+        switchFragment(chartType);
 
-        loadDatasetAndFields();
-        setupLeftPane();
-        setupMiddlePane();
-
-        chartNameField.setValue(cfg.getName());
-
+        // Load JSON vào Fragment hiện tại
         try {
-            JsonNode node = objectMapper.readTree(cfg.getSettingsJson());
-
-            if (chartType == ChartType.BAR) {
-                barConfig.setFields(fieldNames);
-
-                // 1. Load X Axis
-                String x = node.path("xAxis").asText(null);
-                barConfig.setXAxisValue(x); // Dùng Setter mới
-
-                // 2. Load Metrics
-                List<String> loadedMetrics = new ArrayList<>();
-                JsonNode metricsNode = node.path("metrics");
-                if (metricsNode.isArray()) {
-                    metricsNode.forEach(m -> loadedMetrics.add(m.asText()));
-                }
-                barConfig.setMetricsList(loadedMetrics); // Dùng Setter mới
-
-                // 3. Load Dimensions
-                List<String> loadedDims = new ArrayList<>();
-                JsonNode dimsNode = node.path("dimensions");
-                if (dimsNode.isArray()) {
-                    dimsNode.forEach(d -> loadedDims.add(d.asText()));
-                }
-                barConfig.setDimensionsList(loadedDims); // Dùng Setter mới
-            }
-
-            if (chartType == ChartType.PIE) {
-                pieConfig.setFields(fieldNames);
-                pieConfig.setLabelField(node.path("labelField").asText(null));
-                pieConfig.setValueField(node.path("valueField").asText(null));
-            }
+            JsonNode node = objectMapper.readTree(editingConfig.getSettingsJson());
+            getCurrentFragment().setConfigurationJson(node);
         } catch (Exception e) {
-            notifications.create("Cannot parse settingsJson").show();
+            notifications.create("Error loading settings").show();
         }
     }
 
-    // =============================
-    // LOAD DATASET FIELDS
-    // =============================
-    private void loadDatasetAndFields() {
-        dataset = dataManager.load(Dataset.class).id(datasetId).one();
-        fieldNames.clear();
-        fieldsList.removeAll();
+    private void switchFragment(ChartType type) {
+        // Ẩn tất cả, chỉ hiện cái cần thiết
+        fragmentMap.values().forEach(f -> f.setVisible(false));
 
+        ChartConfigFragment fragment = fragmentMap.get(type);
+        if (fragment != null) {
+            fragment.setVisible(true);
+        }
+
+        if (chartTypeLabel != null) chartTypeLabel.setText(type.name());
+    }
+
+    private ChartConfigFragment getCurrentFragment() {
+        return fragmentMap.get(chartType);
+    }
+
+    private void loadDatasetCommon() {
+        dataset = dataManager.load(Dataset.class).id(datasetId).one();
+        datasetNameLabel.setText(dataset.getName());
+
+        // Load Fields List UI
+        fieldsList.removeAll();
         try {
             JsonNode root = objectMapper.readTree(dataset.getSchemaJson());
             if (root.isArray()) {
                 for (JsonNode col : root) {
-                    String name = col.path("name").asText();
-                    String type = col.path("type").asText("string");
-                    fieldNames.add(name);
-                    addDraggableField(name, type);
+                    addDraggableField(col.path("name").asText(), col.path("type").asText("string"));
                 }
             }
+        } catch (Exception e) {}
+    }
+
+    @Subscribe(id = "previewBtn", subject = "clickListener")
+    public void onPreviewBtnClick(ClickEvent<JmixButton> event) {
+        ChartConfigFragment fragment = getCurrentFragment();
+
+        if (!fragment.isValid()) {
+            notifications.create("Vui lòng điền đầy đủ thông tin cấu hình").show();
+            return;
+        }
+
+        String json = fragment.getConfigurationJson().toString();
+
+        chartContainer.removeAll();
+        try {
+            Chart chart = chartConfigService.buildPreviewChart(dataset, chartType, json);
+            chart.setWidthFull();
+            chart.setHeight("400px");
+            chartContainer.add(chart);
         } catch (Exception e) {
-            notifications.create("Cannot parse schemaJson").show();
+            notifications.create("Render error: " + e.getMessage()).show();
         }
     }
 
-    // =============================
-    // ADD DRAGGABLE FIELD
-    // =============================
-    private void addDraggableField(String name, String type) {
-        String displayText ="#    "+ name ;
-        NativeLabel lbl = new NativeLabel(displayText);
+    @Subscribe(id = "save", subject = "clickListener")
+    public void onSaveClick(ClickEvent<JmixButton> event) {
+        if (chartNameField.isEmpty()) {
+            notifications.create("Nhập tên biểu đồ").show();
+            return;
+        }
 
+        ChartConfigFragment fragment = getCurrentFragment();
+        if (!fragment.isValid()) {
+            notifications.create("Cấu hình không hợp lệ").show();
+            return;
+        }
+
+        ChartConfig config = (editingConfig != null) ? editingConfig : dataManager.create(ChartConfig.class);
+        config.setName(chartNameField.getValue().toString());
+        config.setDataset(dataset);
+        config.setChartType(chartType);
+        config.setSettingsJson(fragment.getConfigurationJson().toString());
+
+        dataManager.save(config);
+        notifications.create("✅ Saved!").show();
+        viewNavigators.view(this, ChartConfigListView.class).navigate();
+    }
+
+    private void addDraggableField(String name, String type) {
+        NativeLabel lbl = new NativeLabel("# " + name);
         lbl.getStyle()
-                // --- Layout Fix ---
                 .setDisplay(Style.Display.FLEX)
                 .setWidth("100%")
                 .setHeight("24px")
@@ -180,130 +185,8 @@ public class ChartConfigView extends StandardView {
                 .setBackgroundColor("#f7f7f7")
                 .setFontSize("14px");
 
-
-       lbl.getElement().setAttribute("data-field-name", name);
-        DragSource<NativeLabel> dragSource = DragSource.create(lbl);
-        dragSource.setDragData(name);
-
+        lbl.getElement().setAttribute("data-field-name", name);
+        DragSource.create(lbl).setDragData(name);
         fieldsList.add(lbl);
-    }
-
-    // =============================
-    // LEFT + MIDDLE PANES
-    // =============================
-    private void setupLeftPane() {
-        datasetNameLabel.setText(dataset.getName());
-        chartTypeLabel.setText(chartType.name());
-    }
-
-    private void setupMiddlePane() {
-        if (chartType == ChartType.BAR) {
-            barConfig.setFields(fieldNames);
-            barConfig.setVisible(true);
-            pieConfig.setVisible(false);
-        } else if (chartType == ChartType.PIE) {
-            pieConfig.setFields(fieldNames);
-            pieConfig.setVisible(true);
-            barConfig.setVisible(false);
-        }
-    }
-
-    // =============================
-    // PREVIEW
-    // =============================
-    @Subscribe(id = "previewBtn", subject = "clickListener")
-    public void onPreviewBtnClick(ClickEvent<JmixButton> event) {
-        String settingsJson = buildSettingsJson();
-        if (settingsJson == null) return;
-
-        chartContainer.removeAll();
-        try {
-            Chart chart = chartConfigService.buildPreviewChart(dataset, chartType, settingsJson);
-            chart.setWidthFull();
-            chart.setHeight("400px");
-            chartContainer.add(chart);
-        } catch (Exception e) {
-            e.printStackTrace();
-            notifications.create("⚠️ Failed to render chart preview: " + e.getMessage()).show();
-        }
-    }
-
-    // =============================
-    // BUILD SETTINGS JSON
-    // =============================
-    private String buildSettingsJson() {
-        ObjectNode node = objectMapper.createObjectNode();
-
-        if (chartType == ChartType.BAR) {
-            String x = barConfig.getxAxis();
-            List<String> metrics = barConfig.getMetrics();
-            List<String> dims = barConfig.getDimensions();
-            List<FilterRule> filters = barConfig.getFilters();
-
-            if (x == null || x.isBlank()) {
-                notifications.create("Please select X").show();
-                return null;
-            }
-
-            node.put("xAxis", x);
-
-            ArrayNode metricsNode = node.putArray("metrics");
-            metrics.forEach(metricsNode::add);
-
-            ArrayNode dimsNode = node.putArray("dimensions");
-            dims.forEach(dimsNode::add);
-
-            ArrayNode filterNode = node.putArray("filters");
-            for (FilterRule f : filters) {
-                ObjectNode fo = node.objectNode();
-                fo.put("column", f.getColumn());
-                fo.put("operator", f.getOperator());
-                fo.put("value", f.getValue());
-                filterNode.add(fo);
-            }
-
-        }
-
-        if (chartType == ChartType.PIE) {
-            String label = pieConfig.getLabelField();
-            String value = pieConfig.getValueField();
-
-            if (label == null || label.isBlank() || value == null || value.isBlank()) {
-                notifications.create("Please select Label and Value").show();
-                return null;
-            }
-
-            node.put("labelField", label);
-            node.put("valueField", value);
-        }
-
-        return node.toString();
-    }
-
-    // =============================
-    // SAVE
-    // =============================
-    @Subscribe(id = "save", subject = "clickListener")
-    public void onSaveClick(ClickEvent<JmixButton> event) {
-        if (chartNameField.getValue() == null || chartNameField.getValue().toString().isBlank()) {
-            notifications.create("Please enter chart name").show();
-            return;
-        }
-
-        String settingsJson = buildSettingsJson();
-        if (settingsJson == null) return;
-
-        ChartConfig config = (editingConfig != null)
-                ? editingConfig
-                : dataManager.create(ChartConfig.class);
-
-        config.setName(chartNameField.getValue().toString());
-        config.setDataset(dataset);
-        config.setChartType(chartType);
-        config.setSettingsJson(settingsJson);
-
-        dataManager.save(config);
-        notifications.create("✅ ChartConfig saved!").show();
-        viewNavigators.view(this, ChartConfigListView.class).navigate();
     }
 }
