@@ -11,14 +11,6 @@
             <loader id="chartConfigDl"/>
         </instance>
 
-        <keyValueCollection id="chartTypesDc">
-            <properties>
-                <property name="code"/>
-                <property name="icon"/>
-                <property name="category"/>
-                <property name="tags"/>
-            </properties>
-        </keyValueCollection>
         <collection id="datasetsDc"
                     class="com.company.chartconfig.entity.Dataset">
             <loader id="datasetsDl">
@@ -28,65 +20,97 @@
             </loader>
             <fetchPlan extends="_base"/>
         </collection>
-
     </data>
 
     <facets>
         <dataLoadCoordinator auto="true"/>
     </facets>
 
-    <layout>
+    <!--
+        LAYOUT CHÍNH:
+        - width/height="100%" để full màn hình.
+        - padding: 20px (để sát lề hơn).
+        - Bỏ justify-content: center để nội dung tự do dãn ra.
+    -->
+    <layout css="background-color: #f4f6f8; padding: 20px; width: 100%; height: 100%;">
 
-        <!-- PAGE WRAPPER -->
-        <vbox width="100%"
-              css="padding: 28px; gap: 28px;">
+        <!--
+            CONTAINER:
+            - Bỏ maxWidth="1000px" => Nó sẽ dãn hết cỡ theo chiều ngang màn hình.
+        -->
+        <vbox width="100%" height="100%" css="gap: 24px;">
 
-            <h2 text="Create a new chart"
-                css="font-size: 26px; font-weight: 700; color: var(--lumo-primary-color);" />
+            <!-- HEADER -->
+            <vbox css="gap: 4px;">
+                <h2 text="Create New Chart"
+                    css="font-size: 28px; font-weight: 800; color: #1a202c; margin: 0;"/>
+                <span text="Configure your data source and visualization type"
+                      css="color: #718096; font-size: 15px;"/>
+            </vbox>
 
-            <vbox width="100%">
+            <!-- SECTION 1: DATASET -->
+            <vbox width="100%"
+                  css="background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
 
-                <h4 text="Choose dataset"
-                    css="font-size: 16px; font-weight: 600;" />
+                <hbox css="align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <span css="background: #ebf8ff; color: #3182ce; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px;">STEP 1</span>
+                    <h4 text="Select Dataset" css="font-size: 18px; font-weight: 700; margin: 0;"/>
+                </hbox>
 
+                <!--
+                    SELECT BOX:
+                    - width="100%": Dãn full chiều ngang container.
+                    - Bỏ maxWidth.
+                    - Thêm height="45px" nếu muốn ô nhập cao to hơn.
+                -->
                 <entityComboBox id="datasetField"
                                 dataContainer="chartConfigDc"
                                 property="dataset"
                                 itemsContainer="datasetsDc"
-                                label="Dataset"
-                                placeholder="Select dataset...">
+                                label="Source Data"
+                                placeholder="Choose a dataset..."
+                                width="100%">
+                    <prefix>
+                        <icon icon="DATABASE"/>
+                    </prefix>
                 </entityComboBox>
             </vbox>
 
-            <h4 text="Choose chart type"
-                css="font-size: 18px; font-weight: 600;" />
+            <!-- SECTION 2: CHART TYPE -->
+            <!--
+                 Flex-grow: 1 để phần này chiếm hết khoảng trống còn lại của màn hình dưới
+            -->
+            <vbox width="100%"
+                  css="background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); flex-grow: 1;">
 
-            <gridLayout id="chartTypeGrid"
-                        itemsContainer="chartTypesDc"
-                        width="100%"
-                        minHeight="300px"
-                        columnMinWidth="1rem"
-                        gap="var(--lumo-space-s)"
-                        classNames="pt-m pb-l px-m"/>
+                <hbox css="align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <span css="background: #ebf8ff; color: #3182ce; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px;">STEP 2</span>
+                    <h4 text="Choose Visualization" css="font-size: 18px; font-weight: 700; margin: 0;"/>
+                </hbox>
 
-            <hbox alignItems="CENTER">
+                <!--
+                     GRID LAYOUT:
+                     - minmax(200px, 1fr): Mỗi thẻ ít nhất 200px.
+                     - Khi full màn hình, nó sẽ tự chia ra, ví dụ màn 1920px sẽ được khoảng 6-7 thẻ/hàng.
+                -->
+                <div id="chartTypeContainer"
+                     width="100%"
+                     css="display: grid;
+                          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                          gap: 20px;
+                          padding: 4px;"/>
+            </vbox>
+
+            <!-- FOOTER -->
+            <hbox width="100%" css="justify-content: flex-end; padding-bottom: 20px;">
                 <button id="createBtn"
-                        text="Create"
-                        css="background-color: var(--lumo-primary-color);
-                             color: white;
-                             padding: 10px 24px;
-                             font-size: 16px;
-                             font-weight: 600;
-                             border-radius: 10px;
-                             cursor: pointer;
-                             border: none;
-                             box-shadow: var(--lumo-box-shadow-m);
-                             transition: all .2s;">
-                </button>
+                        text="Create Chart Configuration"
+                        icon="ARROW_RIGHT"
+                        iconAfterText="true"
+                        themeNames="primary large"
+                        css="border-radius: 12px; padding: 20px 32px; font-weight: 700; box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);"/>
             </hbox>
 
         </vbox>
-
     </layout>
-
 </view>

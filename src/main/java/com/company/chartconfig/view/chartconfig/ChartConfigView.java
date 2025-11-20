@@ -136,7 +136,7 @@ public class ChartConfigView extends StandardView {
                 .set("cursor", "grab")
                 .set("border-radius", "14px")
                 .set("background-color", "#e7d7d7")
-                .set("font-size", "22px")
+                .set("font-size", "14px")
                 .set("user-select", "none")
                 .set("margin-bottom", "4px");
 
