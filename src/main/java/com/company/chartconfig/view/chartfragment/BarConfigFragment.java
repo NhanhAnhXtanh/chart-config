@@ -1,4 +1,4 @@
-package com.company.chartconfig.view.barconfigfragment;
+package com.company.chartconfig.view.chartfragment;
 
 import com.company.chartconfig.utils.DropZoneUtils;
 import com.company.chartconfig.utils.FilterRule;

@@ -1,0 +1,52 @@
+vaadin-accordion-panel::part(summary) {
+    background-color: transparent;
+    padding: 8px 0;
+    min-height: auto;
+}
+
+vaadin-accordion-panel::part(summary-content) {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--lumo-header-text-color);
+}
+
+/* Loại bỏ gạch chân mặc định của Accordion panel */
+vaadin-accordion-panel {
+    border-bottom: none !important;
+}
+
+/* 3. Fix lỗi "bọc thẻ div" khiến height 100% không chạy */
+/* Class này giúp nội dung bên trong Accordion bung hết cỡ */
+vaadin-accordion-panel::part(content) {
+    padding: 0;
+    padding-bottom: 10px;
+}
+
+/* Đảm bảo fieldsList có chiều cao cố định hoặc max-height để scroll hoạt động */
+/* Dựa theo snippet bạn gửi: height: 434px */
+#fieldsList {
+    max-height: 400px; /* Hoặc con số cụ thể bạn muốn */
+    min-height: 150px;
+    /* Đảm bảo padding cho nội dung bên trong không bị cắt */
+    padding-right: 4px;
+}
+
+/* 4. Style cho Item bên trong (Metric/Columns) để giống hình mẫu */
+/* Tự động style các thẻ hbox/vbox con bên trong fieldsList mà không cần sửa XML */
+#fieldsList > hbox,
+#content > hbox {
+    background-color: #f5f6f8;
+    border-radius: 6px;
+    padding: 8px 12px;
+    align-items: center;
+    gap: 10px;
+    cursor: grab;
+    border: 1px solid transparent;
+    margin-bottom: 6px;
+    transition: border-color 0.2s;
+}
+
+#fieldsList > hbox:hover,
+#content > hbox:hover {
+    border-color: var(--lumo-primary-color-50pct);
+}

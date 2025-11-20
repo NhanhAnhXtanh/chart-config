@@ -2,32 +2,22 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
         <!-- Root VBox -->
-        <vbox id="root" width="100%" spacing="false" css="gap:12px; overflow: hidden;">
+        <vbox id="root" width="100%" spacing="false" padding="false" >
 
             <!-- X Axis -->
-            <vbox spacing="false">
                 <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
                 <div id="xDrop" classNames="chart-drop-zone"/>
-            </vbox>
 
             <!-- Metrics -->
-            <vbox spacing="false">
                 <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
                 <div id="metricsDrop" classNames="chart-drop-zone"/>
-            </vbox>
-
+                <div id="xDropZone" classNames="chart-drop-zone"/>
             <!-- Dimensions -->
-            <vbox spacing="false">
                 <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
                 <div id="dimensionsDrop" classNames="chart-drop-zone"/>
-            </vbox>
 
-            <!-- Filters -->
-            <vbox spacing="false">
                 <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
-            </vbox>
-
 
         </vbox>
     </content>

@@ -2,4 +2,19 @@
 @import url('view/main-view.css');
 @import url('view/main-view-top-menu.css');
 @import url('view/login-view.css');
-@import url(chart-drop-zone.css);
+@import url('chart-drop-zone.css');
+@import url('chart-render.css');
+.my-hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.my-hide-scrollbar {
+    scrollbar-width: none;  /* For Firefox */
+    -ms-overflow-style: none;  /* For IE and Edge */
+}
+.scroller .vaadin-scroller__content::-webkit-scrollbar {
+    display: none;
+}
+.scroller .vaadin-scroller__content {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
