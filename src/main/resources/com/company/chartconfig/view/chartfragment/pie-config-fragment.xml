@@ -1,20 +1,12 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
-        <vbox id="root" width="100%" spacing="false" css="gap:12px; overflow: hidden;">
+        <vbox id="root" width="100%" spacing="false" padding="false" css=" overflow: hidden;">
 
             <!-- Label Field -->
-            <vbox width="100%" spacing="false" css="gap: 4px;">
                 <span text="Label Field" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                <!-- Chỉ cần classname thôi -->
                 <div id="labelDropZone" classNames="chart-drop-zone"/>
-            </vbox>
-
-            <!-- Value Field -->
-            <vbox width="100%" spacing="false" css="gap: 4px;">
                 <span text="Value Field" css="font-weight: 600; font-size: 13px; color: #555;"/>
                 <div id="valueDropZone" classNames="chart-drop-zone"/>
-            </vbox>
-
         </vbox>
     </content>
 </fragment>

@@ -4,16 +4,18 @@ import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
-import com.company.chartconfig.view.barconfigfragment.BarConfigFragment;
+import com.company.chartconfig.view.chartfragment.BarConfigFragment;
 import com.company.chartconfig.view.main.MainView;
-import com.company.chartconfig.view.pieconfigfragment.PieConfigFragment;
+import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.Route;
 import io.jmix.chartsflowui.component.Chart;
 import io.jmix.core.DataManager;
@@ -30,7 +32,18 @@ import java.util.*;
 @ViewController(id = "ChartConfigView")
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
+    @ViewComponent
+    private TypedTextField<String> searchField;
 
+    @Subscribe
+    public void onInit(final InitEvent event) {
+        searchField.addKeyPressListener(Key.ENTER, keyPressEvent -> doSearch());
+
+    }
+    private void doSearch() {
+        String searchValue = searchField.getValue();
+
+    }
     private UUID datasetId;
     private ChartType chartType;
 
@@ -127,27 +140,27 @@ public class ChartConfigView extends StandardView {
     // ADD DRAGGABLE FIELD
     // =============================
     private void addDraggableField(String name, String type) {
-        String displayText = name + " (" + type + ")";
+        String displayText ="#    "+ name ;
         NativeLabel lbl = new NativeLabel(displayText);
 
         lbl.getStyle()
                 // --- Layout Fix ---
-                .set("display", "block")
-                .set("width", "100%")
-                .set("box-sizing", "border-box")
-                // ------------------
-                .set("padding", "8px 12px") // Padding đẹp hơn
-                .set("border", "1px solid #ccc")
-                .set("cursor", "grab")
-                .set("border-radius", "8px") // Bo góc mềm hơn
-                .set("background-color", "#ffffff") // Nền trắng cho sạch
-                .set("font-size", "14px")
-                .set("user-select", "none")
-                .set("margin-bottom", "0")
-                .set("box-shadow", "0 1px 3px rgba(0,0,0,0.05)"); // Thêm bóng nhẹ
+                .setDisplay(Style.Display.FLEX)
+                .setWidth("100%")
+                .setHeight("24px")
+                .setBoxSizing(Style.BoxSizing.BORDER_BOX)
+                .setJustifyContent(Style.JustifyContent.SPACE_BETWEEN)
+                .setFontWeight(Style.FontWeight.BOLD)
+                .setAlignItems(Style.AlignItems.CENTER)
+                .setPadding("0 4px")
+                .setCursor("crab")
+                .set("transform", "translate(0,0)")
+                .setBorderRadius("4px")
+                .setBackgroundColor("#f7f7f7")
+                .setFontSize("14px");
 
-        lbl.getElement().setAttribute("data-field-name", name);
 
+       lbl.getElement().setAttribute("data-field-name", name);
         DragSource<NativeLabel> dragSource = DragSource.create(lbl);
         dragSource.setDragData(name);
 

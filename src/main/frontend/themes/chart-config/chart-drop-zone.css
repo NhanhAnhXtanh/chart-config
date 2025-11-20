@@ -1,69 +1,142 @@
 /* =========================================
-   DROP ZONE STYLING - BIG & BOLD VERSION
+   DROP ZONE - RELATIVE SCALING (Dựa trên code của bạn)
    ========================================= */
 
 .chart-drop-zone {
+    /* CHIỀU RỘNG: Luôn chiếm 100% khung chứa */
     width: 100%;
-    min-height: 40px; /* Cao to dễ thả */
-    font-size: large;
-    border: 2px dashed #94a3b8;
-    border-radius: 12px;
+
+    /* CHIỀU CAO & PADDING: Dùng em để ăn theo cỡ chữ */
+    min-height: 2.5em;
+    padding: 0.3em 0.6em;
+
+    /* FONT: Dùng rem để theo chuẩn của trình duyệt (Chốt chặn tỷ lệ) */
+    font-size: 0.9rem;
+
+    /* BORDER: Thay 1px bằng 0.07em để viền dày lên khi zoom */
+    border: 0.07em dashed #94a3b8;
+    border-radius: 0.4em;
+
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+
     background-color: #f8fafc;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease-in-out;
     box-sizing: border-box;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
+/* Hiệu ứng Drag Over */
 .chart-drop-zone.drag-over {
     background-color: #eff6ff !important;
     border-color: #2563eb !important;
     border-style: solid;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-    transform: scale(1.02);
+
+    /* Shadow tính bằng em */
+    box-shadow: 0 0 0 0.15em rgba(37, 99, 235, 0.1);
 }
 
+/* Trạng thái đã điền (Filled) */
 .chart-drop-zone.filled {
-    border: 2px solid #3b82f6;
+    /* Viền co giãn */
+    border: 0.07em solid #3b82f6;
     background-color: #ffffff;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
 
-.chart-drop-zone-chip {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    padding: 0 20px;
-    border-radius: 24px;
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
-    user-select: none;
+    /* Padding co giãn */
+    padding: 0.15em 0.3em;
+
+    /* Giữ nguyên logic căn giữa của bạn */
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
-.chart-drop-zone-hint {
-    color: #64748b;
-    font-size: 14px;
+/* --- CHIP (Cục dữ liệu) --- */
+./* --- CHIP (Cục dữ liệu) - Sửa lỗi co giãn --- */
+.chart-drop-zone-chip {
+    /* QUAN TRỌNG: Để padding tính vào trong kích thước, không làm phình to box */
+    box-sizing: border-box;
+
+    background: #eff6ff;
+    color: #1e40af;
+
+    /* Viền co giãn theo em */
+    border: 0.07em solid #bfdbfe;
+
+    /* Padding: Dùng em để khi font to lên, padding to lên theo đúng tỷ lệ */
+    padding: 0.1em 3.8em;
+
+    border-radius: 0.25em;
+
+    /* Font size kế thừa từ cha (1em = 100% cỡ chữ của cha) */
+    font-size: 1em;
     font-weight: 500;
+
+    /* Line-height: QUAN TRỌNG để chiều cao background ăn theo chữ */
+    line-height: 1.5;
+
+    /* Flexbox settings để nội dung bên trong căn chỉnh chuẩn */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Căn giữa text trong chip nếu nó rộng */
+
+    /* Xử lý kích thước trong môi trường Flex của cha */
+    flex: 0 1 auto; /* Cho phép co nhỏ (shrink) nhưng không tự giãn quá đà */
+    max-width: 100%;
+
+    /* Chiều cao tự động để ôm trọn padding + line-height */
+    height: auto;
+    min-height: 2em; /* Đảm bảo độ cao tối thiểu đẹp mắt */
+
+    /* Xử lý text dài */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- HINT TEXT --- */
+.chart-drop-zone-hint {
+    color: #94a3b8;
+    font-size: 0.9em;
+    font-weight: 400;
+
     user-select: none;
     pointer-events: none;
+
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: 100%;
 }
 
+/* Icon dấu cộng */
 .chart-drop-zone-hint::before {
     content: "+";
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+
+    /* Hình tròn co giãn */
+    width: 1.4em;
+    height: 1.4em;
+
     background-color: #e2e8f0;
     color: #64748b;
     border-radius: 50%;
+
+    font-size: 1.1em;
     font-weight: bold;
-    font-size: 18px;
+    line-height: 1;
+}
+
+/* RESPONSIVE SCREEN SIZE */
+@media (max-width: 600px) {
+    .chart-drop-zone {
+        /* Khi màn hình nhỏ, giảm font gốc -> mọi thứ tự bé lại theo tỷ lệ */
+        font-size: 0.8rem;
+    }
 }

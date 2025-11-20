@@ -1,6 +1,6 @@
-package com.company.chartconfig.view.pieconfigfragment;
+package com.company.chartconfig.view.chartfragment;
 
-import com.company.chartconfig.utils.DropZoneUtils; // Import class tiện ích vừa tạo
+import com.company.chartconfig.utils.DropZoneUtils;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import io.jmix.flowui.fragment.Fragment;
