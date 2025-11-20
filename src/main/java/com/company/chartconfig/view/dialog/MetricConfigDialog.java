@@ -11,6 +11,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -30,9 +32,14 @@ public class MetricConfigDialog extends Dialog {
         tabSheet = new TabSheet();
         tabSheet.setWidthFull();
 
-        // --- Tab Simple ---
+        // --- PHÒNG THỦ: Nếu columns null thì tạo list rỗng để ComboBox không lỗi ---
+        List<String> safeColumns = columns != null ? columns : new ArrayList<>();
+
+        // Tab Simple
         VerticalLayout simple = new VerticalLayout();
-        columnField = new ComboBox<>("Column", columns);
+
+        // Truyền safeColumns vào thay vì columns
+        columnField = new ComboBox<>("Column", safeColumns);
         columnField.setWidthFull();
 
         aggregateField = new ComboBox<>("Aggregate");

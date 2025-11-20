@@ -1,19 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+    </data>
     <content>
         <!-- Root VBox -->
         <vbox id="root" width="100%" spacing="false" padding="false" >
-                <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
+            <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
                 <div id="xDrop" classNames="chart-drop-zone"/>
 
                 <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
                 <div id="metricsDrop" classNames="chart-drop-zone"/>
 
                 <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
-                <div id="dimensionsDrop" classNames="chart-drop-zone"/>
+                <div id="dimensionsDrop" classNames="chart-drop-zone">
+                </div>
+            <vbox width="100%" spacing="false" padding="false" css="gap: 6px;">
+                <!-- Tiêu đề và Icon nằm trong HBox -->
+                <hbox css="align-items: center; gap: 6px;">
+                    <span text="Contribution Mode" css="font-weight: 600; font-size: 14px; color: #333;"/>
+                    <button icon="INFO_CIRCLE_O"
+                            themeNames="icon tertiary inline"
+                            css="color: #999; width: 16px; height: 16px; padding: 0; min-width: 0; min-height: 0;">
+                        <tooltip text="Calculate contribution per series or row" position="END_TOP"/>
+                    </button>
+                </hbox>
 
+                <!-- ComboBox nằm dưới tiêu đề -->
+                <comboBox id="contributionModeField" width="100%"/>
+            </vbox>
                 <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
+
         </vbox>
     </content>
 </fragment>

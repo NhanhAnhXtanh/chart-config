@@ -5,12 +5,14 @@ import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
 import com.company.chartconfig.view.chartfragment.BarConfigFragment;
+import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
 import com.company.chartconfig.view.main.MainView;
-import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -46,10 +48,14 @@ public class ChartConfigView extends StandardView {
     @Autowired private ChartConfigService chartConfigService;
     @Autowired private ViewNavigators viewNavigators;
 
+    // UI Components
     @ViewComponent private NativeLabel datasetNameLabel;
     @ViewComponent private NativeLabel chartTypeLabel;
     @ViewComponent private TypedTextField<Object> chartNameField;
+
     @ViewComponent private VerticalLayout fieldsList;
+    @ViewComponent private TypedTextField<String> searchField; // Ô tìm kiếm
+
     @ViewComponent private VerticalLayout chartContainer;
 
     // Inject Fragments
@@ -58,12 +64,32 @@ public class ChartConfigView extends StandardView {
 
     @Subscribe
     public void onInit(final InitEvent event) {
-        // Đăng ký các fragment vào Map
+        // 1. Đăng ký các fragment vào Map
         fragmentMap.put(ChartType.BAR, barConfig);
         fragmentMap.put(ChartType.PIE, pieConfig);
-        // fragmentMap.put(ChartType.LINE, lineConfig); // Dễ dàng mở rộng
+
+        // 2. Setup tìm kiếm (Enter hoặc Text ChangeMode.EAGER nếu muốn)
+        searchField.addKeyPressListener(Key.ENTER, e -> doSearch());
+        // Hoặc tìm kiếm ngay khi gõ (Bỏ comment dòng dưới nếu muốn)
+        // searchField.addValueChangeListener(e -> doSearch());
     }
 
+    // --- LOGIC TÌM KIẾM TRƯỜNG ---
+    private void doSearch() {
+        String keyword = searchField.getValue() != null ? searchField.getValue().toLowerCase().trim() : "";
+
+        fieldsList.getChildren().forEach(component -> {
+            // Kiểm tra xem component có phải NativeLabel không
+            if (component instanceof NativeLabel lbl) {
+                String fieldName = lbl.getElement().getAttribute("data-field-name");
+                boolean match = fieldName != null && fieldName.toLowerCase().contains(keyword);
+                lbl.setVisible(match);
+            }
+        });
+    }
+    // =============================
+    // INIT PARAMS (CREATE MODE)
+    // =============================
     public void initParams(UUID datasetId, ChartType chartType) {
         this.editingConfig = null;
         this.datasetId = datasetId;
@@ -72,6 +98,9 @@ public class ChartConfigView extends StandardView {
         switchFragment(chartType);
     }
 
+    // =============================
+    // INIT FROM EXISTING (EDIT MODE)
+    // =============================
     public void initFromExisting(UUID chartConfigId) {
         this.editingConfig = dataManager.load(ChartConfig.class).id(chartConfigId).one();
         this.datasetId = editingConfig.getDataset().getId();
@@ -86,7 +115,7 @@ public class ChartConfigView extends StandardView {
             JsonNode node = objectMapper.readTree(editingConfig.getSettingsJson());
             getCurrentFragment().setConfigurationJson(node);
         } catch (Exception e) {
-            notifications.create("Error loading settings").show();
+            notifications.create("Error loading settings: " + e.getMessage()).show();
         }
     }
 
@@ -110,16 +139,34 @@ public class ChartConfigView extends StandardView {
         dataset = dataManager.load(Dataset.class).id(datasetId).one();
         datasetNameLabel.setText(dataset.getName());
 
-        // Load Fields List UI
         fieldsList.removeAll();
+
+        // 1. Tạo danh sách chứa tên cột để truyền cho Fragment
+        List<String> allColumns = new ArrayList<>();
+
         try {
             JsonNode root = objectMapper.readTree(dataset.getSchemaJson());
             if (root.isArray()) {
                 for (JsonNode col : root) {
-                    addDraggableField(col.path("name").asText(), col.path("type").asText("string"));
+                    String name = col.path("name").asText();
+                    String type = col.path("type").asText("string");
+
+                    // Tạo UI kéo thả
+                    addDraggableField(name, type);
+
+                    // 2. Thêm vào danh sách cột
+                    allColumns.add(name);
                 }
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+            notifications.create("Lỗi đọc Schema").show();
+        }
+
+        // 3. QUAN TRỌNG: Truyền danh sách cột vào TẤT CẢ Fragment
+        // Nếu thiếu dòng này, Dialog sẽ bị null list và gây lỗi
+        if (!fragmentMap.isEmpty()) {
+            fragmentMap.values().forEach(frag -> frag.setAvailableFields(allColumns));
+        }
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
@@ -141,6 +188,7 @@ public class ChartConfigView extends StandardView {
             chartContainer.add(chart);
         } catch (Exception e) {
             notifications.create("Render error: " + e.getMessage()).show();
+            e.printStackTrace();
         }
     }
 
@@ -169,24 +217,37 @@ public class ChartConfigView extends StandardView {
     }
 
     private void addDraggableField(String name, String type) {
-        NativeLabel lbl = new NativeLabel("# " + name);
+        NativeLabel lbl = new NativeLabel("# " + name); // Thêm icon text tượng trưng
+
+        // Style giống Card nhỏ
         lbl.getStyle()
                 .setDisplay(Style.Display.FLEX)
                 .setWidth("100%")
-                .setHeight("24px")
+                .setHeight("32px") // Cao hơn chút cho dễ nhìn
                 .setBoxSizing(Style.BoxSizing.BORDER_BOX)
-                .setJustifyContent(Style.JustifyContent.SPACE_BETWEEN)
-                .setFontWeight(Style.FontWeight.BOLD)
                 .setAlignItems(Style.AlignItems.CENTER)
-                .setPadding("0 4px")
-                .setCursor("crab")
-                .set("transform", "translate(0,0)")
-                .setBorderRadius("4px")
-                .setBackgroundColor("#f7f7f7")
-                .setFontSize("14px");
+                .setPadding("0 12px")
+                .setCursor("grab") // SỬA TYPO: crab -> grab
+                .setMarginBottom("6px")
+                .setBorderRadius("6px")
+                .setBackgroundColor("#ffffff")
+                .setBorder("1px solid #e0e0e0")
+                .setFontSize("13px")
+                .setFontWeight("500")
+                .set("user-select", "none")
+                .set("transition", "all 0.2s");
+
+        // Hover effect
+        lbl.getElement().addEventListener("mouseenter", e ->
+                lbl.getStyle().setBorder("1px solid var(--lumo-primary-color)"));
+        lbl.getElement().addEventListener("mouseleave", e ->
+                lbl.getStyle().setBorder("1px solid #e0e0e0"));
 
         lbl.getElement().setAttribute("data-field-name", name);
-        DragSource.create(lbl).setDragData(name);
+
+        DragSource<NativeLabel> dragSource = DragSource.create(lbl);
+        dragSource.setDragData(name);
+
         fieldsList.add(lbl);
     }
 }
