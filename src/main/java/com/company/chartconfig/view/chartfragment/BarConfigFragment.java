@@ -51,15 +51,6 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
         DropZoneUtils.setupFilter(filtersDrop, filters);
 
-        // Setup Contribution Mode ComboBox
-        contributionModeField.setItems(ContributionMode.values());
-
-        // Hiển thị Label đẹp hơn (thay vì tên Enum mặc định)
-        contributionModeField.setItemLabelGenerator(mode -> switch (mode) {
-            case NONE -> "None";
-            case ROW -> "Row (100% Stacked)";
-            case SERIES -> "Series (% Total)";
-        });
 
         // Set mặc định nếu chưa có
         if (contributionModeField.getValue() == null) {

@@ -7,9 +7,9 @@ import org.springframework.lang.Nullable;
 
 public enum ContributionMode implements EnumClass<String> {
 
-    NONE("none"),
-    ROW("row"),       // 100% Stacked (theo dòng)
-    SERIES("series");
+    NONE("Giá trị thực"),
+    ROW("100% Stacked"),       // 100% Stacked (theo dòng)
+    SERIES("% Tổng cột");
 
     private final String id;
 

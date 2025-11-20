@@ -25,12 +25,24 @@
                     </button>
                 </hbox>
 
-                <!-- ComboBox nằm dưới tiêu đề -->
-                <comboBox id="contributionModeField" width="100%"/>
+                <comboBox id="contributionModeField" width="100%"
+                          itemsEnum="com.company.chartconfig.enums.ContributionMode"/>
             </vbox>
                 <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
+            <vbox width="100%" spacing="false" padding="false" css="gap: 4px;">
+                <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
+                    <span text="Series Limit" css="font-weight: 600; font-size: 14px; color: #555;"/>
+                    <button icon="INFO_CIRCLE_O"
+                            themeNames="icon tertiary inline"
+                            css="color: #999; width: 16px; height: 16px; padding: 0; min-width: 0; min-height: 0;">
+                        <tooltip text="Giới hạn số lượng dòng hiển thị (Top N)" position="TOP"/>
+                    </button>
+                </hbox>
 
+                <!-- ComboBox cho phép nhập số hoặc chọn có sẵn -->
+                <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"/>
+            </vbox>
         </vbox>
     </content>
 </fragment>
