@@ -91,25 +91,27 @@ public class ChartConfigView extends StandardView {
             if (chartType == ChartType.BAR) {
                 barConfig.setFields(fieldNames);
 
+                // 1. Load X Axis
                 String x = node.path("xAxis").asText(null);
-                if (x != null) {
-                    DropZoneUtils.updateVisuals(barConfig.getxDrop(), x);
-                }
+                barConfig.setXAxisValue(x); // Dùng Setter mới
 
-                List<String> metrics = new ArrayList<>();
+                // 2. Load Metrics
+                List<String> loadedMetrics = new ArrayList<>();
                 JsonNode metricsNode = node.path("metrics");
                 if (metricsNode.isArray()) {
-                    metricsNode.forEach(m -> metrics.add(m.asText()));
+                    metricsNode.forEach(m -> loadedMetrics.add(m.asText()));
                 }
-                DropZoneUtils.updateMulti(barConfig.getMetricsDrop(), metrics);
+                barConfig.setMetricsList(loadedMetrics); // Dùng Setter mới
 
-                List<String> dims = new ArrayList<>();
+                // 3. Load Dimensions
+                List<String> loadedDims = new ArrayList<>();
                 JsonNode dimsNode = node.path("dimensions");
                 if (dimsNode.isArray()) {
-                    dimsNode.forEach(d -> dims.add(d.asText()));
+                    dimsNode.forEach(d -> loadedDims.add(d.asText()));
                 }
-                DropZoneUtils.updateMulti(barConfig.getDimensionsDrop(), dims);
+                barConfig.setDimensionsList(loadedDims); // Dùng Setter mới
             }
+
 
             if (chartType == ChartType.PIE) {
                 pieConfig.setFields(fieldNames);
