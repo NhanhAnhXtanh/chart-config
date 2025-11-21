@@ -14,6 +14,7 @@ import io.jmix.flowui.view.ViewComponent;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Map;
 
 @FragmentDescriptor("pie-config-fragment.xml")
 public class PieConfigFragment extends Fragment<VerticalLayout> implements ChartConfigFragment {
@@ -58,6 +59,11 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
     }
 
     @Override
+    public void setColumnTypes(Map<String, String> types) {
+
+    }
+
+    @Override
     public ObjectNode getConfigurationJson() {
         ObjectNode node = objectMapper.createObjectNode();
         node.put("labelField", labelField);
@@ -79,8 +85,8 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
 
     @Override
     public boolean isValid() {
-        return labelField != null && !labelField.isBlank()
-                && valueField != null && !valueField.isBlank();
+        return labelField == null || labelField.isBlank()
+                || valueField == null || valueField.isBlank();
     }
 
     // --- MIGRATION SUPPORT ---

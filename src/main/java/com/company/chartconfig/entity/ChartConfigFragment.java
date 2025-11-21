@@ -3,26 +3,35 @@ package com.company.chartconfig.view.config.common;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.Map;
 
 public interface ChartConfigFragment {
-    // Nạp danh sách cột từ Dataset để dùng cho Dialog/Validate
+    /**
+     * Cập nhật danh sách các trường có sẵn từ Dataset
+     */
     void setAvailableFields(List<String> fields);
 
-    // Xuất JSON config để lưu
+    /**
+     * (MỚI) Cập nhật Metadata kiểu dữ liệu (Name -> Type)
+     * Để Fragment biết cột nào là Date để hiện cấu hình TimeGrain
+     */
+    void setColumnTypes(Map<String, String> types);
+
+    /**
+     * Lấy JSON cấu hình hiện tại
+     */
     ObjectNode getConfigurationJson();
 
-    // Nạp JSON config để hiển thị (Edit mode)
+    /**
+     * Nạp lại cấu hình từ JSON đã lưu
+     */
     void setConfigurationJson(JsonNode json);
 
-    // Kiểm tra hợp lệ
     boolean isValid();
 
-    // Kế thừa từ Component
-    void setVisible(boolean visible);
-
-    // Migration Support
     String getMainDimension();
     void setMainDimension(String field);
+
     String getMainMetric();
     void setMainMetric(String field);
 }
