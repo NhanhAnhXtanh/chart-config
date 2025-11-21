@@ -1,88 +1,119 @@
 /* =========================================
-   DROP ZONE STYLING - FIX LAYOUT
+   DROP ZONE STYLING - THEME MATCHING (RED/YELLOW)
    ========================================= */
 
 .chart-drop-zone {
-    /* KÍCH THƯỚC */
     width: 100%;
-    min-height: 50px; /* Chiều cao vừa đủ, không quá to */
+    min-height: 50px;
     box-sizing: border-box;
     padding: 6px;
     margin-top: 4px;
 
-    /* GIAO DIỆN */
-    border: 2px dashed #94a3b8;
-    border-radius: 8px;
-    background-color: #f8fafc;
+    /* Viền xám nhẹ khi chưa active */
+    border: 2px dashed var(--lumo-contrast-30pct);
+    border-radius: var(--lumo-border-radius);
+    background-color: var(--lumo-contrast-5pct);
 
-    /* LAYOUT: QUAN TRỌNG ĐỂ KHÔNG BỊ DÍU */
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 6px;
-
-    justify-content: center;
+    justify-content: center; /* Center Hint */
 
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-/* Khi đã có dữ liệu (Class này được thêm bởi Java) */
+/* Khi đã có dữ liệu (Filled) -> Viền ĐỎ (Primary) */
 .chart-drop-zone.filled {
-    justify-content: flex-start; /* Căn trái để các chip xếp hàng */
-    background-color: #ffffff;
-    border: 2px solid #60a5fa;   /* Viền liền màu xanh */
+    justify-content: flex-start;
+    background-color: var(--lumo-base-color);
+    border: 2px solid var(--lumo-primary-color-50pct);
 }
 
-/* Hiệu ứng khi kéo vào */
+/* Hiệu ứng khi kéo vào (Drag Over) -> Nền ĐỎ nhạt, Viền ĐỎ đậm */
 .chart-drop-zone.drag-over {
-    background-color: #eff6ff !important;
-    border-color: #2563eb !important;
+    background-color: var(--lumo-primary-color-10pct) !important;
+    border-color: var(--lumo-primary-color) !important;
     border-style: solid;
     transform: scale(1.01);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px var(--lumo-primary-color-30pct);
 }
 
 /* =========================================
    CHIP STYLING (Thẻ dữ liệu)
    ========================================= */
 .chart-drop-zone-chip {
-    /* BOX MODEL */
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    /* SIZE & SPACING: SỬA LỖI DÍU Ở ĐÂY */
-    padding: 4px 12px;       /* Padding chuẩn (trên dưới 4px, trái phải 12px) */
-    border-radius: 16px;     /* Bo tròn như viên thuốc */
+    padding: 4px 8px 4px 12px;
+    gap: 6px;
 
-    /* MÀU SẮC */
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1e40af;
+    border-radius: 20px; /* Bo tròn mềm mại */
 
-    /* TEXT */
-    font-size: 0.9rem;
+    /* MÀU SẮC THEO THEME: Nền đỏ nhạt, Chữ đỏ đậm */
+    background-color: var(--lumo-primary-color-10pct);
+    border: 1px solid var(--lumo-primary-color-30pct);
+    color: var(--lumo-primary-text-color);
+
+    font-size: var(--lumo-font-size-s);
     font-weight: 600;
     line-height: 1.4;
-    white-space: nowrap;     /* Không xuống dòng trong chip */
+    white-space: nowrap;
 
-    /* XỬ LÝ KHI TÊN QUÁ DÀI */
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
 
     user-select: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+/* Hover vào Chip -> Đậm hơn chút */
+.chart-drop-zone-chip:hover {
+    background-color: var(--lumo-primary-color-30pct);
+    border-color: var(--lumo-primary-color);
 }
 
 /* =========================================
-   HINT TEXT (Chữ "Kéo thả vào đây")
+   REMOVE BUTTON (Nút X)
+   ========================================= */
+.chart-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+
+    /* Màu mặc định của nút X trùng màu chữ chip */
+    color: var(--lumo-primary-color);
+    opacity: 0.6;
+
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* Hover nút X -> Đỏ rực cảnh báo */
+.chart-chip-remove:hover {
+    background-color: var(--lumo-error-color-10pct);
+    color: var(--lumo-error-text-color);
+    opacity: 1;
+}
+
+/* =========================================
+   HINT TEXT ("Kéo thả vào đây")
    ========================================= */
 .chart-drop-zone-hint {
-    color: #94a3b8;
-    font-size: 0.85rem;
+    color: var(--lumo-tertiary-text-color);
+    font-size: var(--lumo-font-size-s);
     font-weight: 500;
     font-style: italic;
     pointer-events: none;
@@ -93,6 +124,7 @@
     gap: 6px;
 }
 
+/* Dấu cộng (+) trước Hint */
 .chart-drop-zone-hint::before {
     content: "+";
     display: inline-flex;
@@ -100,34 +132,17 @@
     justify-content: center;
     width: 20px;
     height: 20px;
-    background: #e2e8f0;
-    color: #64748b;
+
+    /* Màu nền xám nhạt */
+    background: var(--lumo-contrast-10pct);
+    color: var(--lumo-secondary-text-color);
+
     border-radius: 50%;
     font-size: 16px;
     font-weight: bold;
     line-height: 1;
 }
 
-.chart-chip-remove {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 1;
-    color: #1e40af;
-    opacity: 0.5;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.chart-chip-remove:hover {
-    background-color: rgba(255, 255, 255, 0.5);
-    color: #d32f2f; /* Màu đỏ khi hover */
-    opacity: 1;
-}
+/* Scrollbar Utility */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

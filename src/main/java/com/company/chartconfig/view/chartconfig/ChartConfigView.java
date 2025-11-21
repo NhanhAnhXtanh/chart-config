@@ -3,23 +3,30 @@ package com.company.chartconfig.view.chartconfig;
 import com.company.chartconfig.entity.ChartConfig;
 import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
+import com.company.chartconfig.model.FieldItem;
 import com.company.chartconfig.service.ChartConfigService;
-import com.company.chartconfig.view.chartfragment.BarConfigFragment;
-import com.company.chartconfig.view.chartfragment.PieConfigFragment;
-import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
+import com.company.chartconfig.view.config.ChartFragmentRegistry;
+import com.company.chartconfig.view.config.common.ChartConfigFragment;
 import com.company.chartconfig.view.main.MainView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.html.NativeLabel;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.TabVariant;
+import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.Route;
 import io.jmix.chartsflowui.component.Chart;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.Fragments;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.ViewNavigators;
 import io.jmix.flowui.component.textfield.TypedTextField;
@@ -28,121 +35,191 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Route(value = "chart-config-view", layout = MainView.class)
 @ViewController(id = "ChartConfigView")
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
 
-    // Map quản lý các Strategy (Fragment)
-    private final Map<ChartType, ChartConfigFragment> fragmentMap = new HashMap<>();
-
-    private UUID datasetId;
-    private ChartType chartType;
-    private Dataset dataset;
-    private ChartConfig editingConfig;
-
+    // --- INJECT BEANS ---
     @Autowired private DataManager dataManager;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private Notifications notifications;
     @Autowired private ChartConfigService chartConfigService;
     @Autowired private ViewNavigators viewNavigators;
+    @Autowired private Fragments fragments; // Để tạo Fragment động
+    @Autowired private ChartFragmentRegistry fragmentRegistry; // Map Enum -> Class
 
-    // UI Components
+    // --- UI COMPONENTS ---
     @ViewComponent private NativeLabel datasetNameLabel;
-    @ViewComponent private NativeLabel chartTypeLabel;
     @ViewComponent private TypedTextField<Object> chartNameField;
+    @ViewComponent private TypedTextField<String> searchField;
 
-    @ViewComponent private VerticalLayout fieldsList;
-    @ViewComponent private TypedTextField<String> searchField; // Ô tìm kiếm
+    @ViewComponent private ListBox<FieldItem> fieldsList; // ListBox kéo thả
+    @ViewComponent private Tabs chartTypeTabs; // Tabs động
+    @ViewComponent private VerticalLayout fragmentContainer; // Chỗ chứa Fragment
+    @ViewComponent private VerticalLayout chartContainer; // Chỗ chứa Chart Preview
 
-    @ViewComponent private VerticalLayout chartContainer;
+    // --- STATE ---
+    private UUID datasetId;
+    private ChartType currentChartType;
+    private Dataset dataset;
+    private ChartConfig editingConfig;
 
-    // Inject Fragments
-    @ViewComponent private BarConfigFragment barConfig;
-    @ViewComponent private PieConfigFragment pieConfig;
+    private final List<FieldItem> allFieldItems = new ArrayList<>();
+    private final List<String> allColumnNames = new ArrayList<>();
+
+    // Cache Fragment để không phải tạo lại
+    private final Map<ChartType, ChartConfigFragment> fragmentCache = new HashMap<>();
+    // Map Tab -> Enum
+    private final Map<Tab, ChartType> tabMap = new HashMap<>();
 
     @Subscribe
     public void onInit(final InitEvent event) {
-        // 1. Đăng ký các fragment vào Map
-        fragmentMap.put(ChartType.BAR, barConfig);
-        fragmentMap.put(ChartType.PIE, pieConfig);
+        // 1. Setup Tabs động từ Enum ChartType
+        setupDynamicTabs();
 
-        // 2. Setup tìm kiếm (Enter hoặc Text ChangeMode.EAGER nếu muốn)
-        searchField.addKeyPressListener(Key.ENTER, e -> doSearch());
-        // Hoặc tìm kiếm ngay khi gõ (Bỏ comment dòng dưới nếu muốn)
-        // searchField.addValueChangeListener(e -> doSearch());
+        // 2. Setup Search
+        searchField.setValueChangeMode(com.vaadin.flow.data.value.ValueChangeMode.EAGER);
+        searchField.addValueChangeListener(e -> doSearch());
     }
 
-    // --- LOGIC TÌM KIẾM TRƯỜNG ---
-    private void doSearch() {
-        String keyword = searchField.getValue() != null ? searchField.getValue().toLowerCase().trim() : "";
+    // ==========================================================
+    // DYNAMIC TABS & FRAGMENT SWITCHING
+    // ==========================================================
+    private void setupDynamicTabs() {
+        chartTypeTabs.removeAll();
+        tabMap.clear();
 
-        fieldsList.getChildren().forEach(component -> {
-            // Kiểm tra xem component có phải NativeLabel không
-            if (component instanceof NativeLabel lbl) {
-                String fieldName = lbl.getElement().getAttribute("data-field-name");
-                boolean match = fieldName != null && fieldName.toLowerCase().contains(keyword);
-                lbl.setVisible(match);
-            }
+        for (ChartType type : ChartType.values()) {
+            // Tạo Tab
+            Tab tab = new Tab();
+
+            // Tạo Icon
+            Icon icon = type.getIcon().create();
+            icon.setSize("18px");
+
+            // Tạo Label
+            Span label = new Span(type.name());
+            label.getStyle().set("font-size", "11px");
+
+            // Add vào Tab
+            tab.add(icon, label);
+            // Style: Icon nằm trên chữ
+            tab.addThemeVariants(TabVariant.LUMO_ICON_ON_TOP);
+
+            chartTypeTabs.add(tab);
+            tabMap.put(tab, type);
+        }
+
+        chartTypeTabs.addSelectedChangeListener(e -> {
+            ChartType newType = tabMap.get(e.getSelectedTab());
+            switchChartType(newType);
         });
     }
-    // =============================
-    // INIT PARAMS (CREATE MODE)
-    // =============================
-    public void initParams(UUID datasetId, ChartType chartType) {
-        this.editingConfig = null;
-        this.datasetId = datasetId;
-        this.chartType = chartType;
-        loadDatasetCommon();
-        switchFragment(chartType);
-    }
 
-    // =============================
-    // INIT FROM EXISTING (EDIT MODE)
-    // =============================
-    public void initFromExisting(UUID chartConfigId) {
-        this.editingConfig = dataManager.load(ChartConfig.class).id(chartConfigId).one();
-        this.datasetId = editingConfig.getDataset().getId();
-        this.chartType = editingConfig.getChartType();
-        this.chartNameField.setValue(editingConfig.getName());
+    private void switchChartType(ChartType newType) {
+        if (newType == null || newType == this.currentChartType) return;
 
-        loadDatasetCommon();
-        switchFragment(chartType);
+        // A. Data Migration (Giữ lại dữ liệu khi đổi chart)
+        ChartConfigFragment oldFrag = getCurrentFragment();
+        String oldDim = (oldFrag != null) ? oldFrag.getMainDimension() : null;
+        String oldMet = (oldFrag != null) ? oldFrag.getMainMetric() : null;
 
-        // Load JSON vào Fragment hiện tại
-        try {
-            JsonNode node = objectMapper.readTree(editingConfig.getSettingsJson());
-            getCurrentFragment().setConfigurationJson(node);
-        } catch (Exception e) {
-            notifications.create("Error loading settings: " + e.getMessage()).show();
-        }
-    }
+        this.currentChartType = newType;
 
-    private void switchFragment(ChartType type) {
-        // Ẩn tất cả, chỉ hiện cái cần thiết
-        fragmentMap.values().forEach(f -> f.setVisible(false));
+        // B. Get/Create New Fragment
+        ChartConfigFragment newFrag = getOrCreateFragment(newType);
 
-        ChartConfigFragment fragment = fragmentMap.get(type);
-        if (fragment != null) {
-            fragment.setVisible(true);
+        // C. Render Fragment
+        fragmentContainer.removeAll();
+        if (newFrag instanceof Component comp) {
+            fragmentContainer.add(comp);
         }
 
-        if (chartTypeLabel != null) chartTypeLabel.setText(type.name());
+        // D. Apply Migration Data
+        // QUAN TRỌNG: Phải set available fields để Dialog Metric có dữ liệu
+        newFrag.setAvailableFields(allColumnNames);
+
+        if (oldDim != null && newFrag.getMainDimension() == null) newFrag.setMainDimension(oldDim);
+        if (oldMet != null && newFrag.getMainMetric() == null) newFrag.setMainMetric(oldMet);
+    }
+
+    private ChartConfigFragment getOrCreateFragment(ChartType type) {
+        if (fragmentCache.containsKey(type)) return fragmentCache.get(type);
+
+        Class<? extends io.jmix.flowui.fragment.Fragment<?>> clazz = fragmentRegistry.getFragmentClass(type);
+        if (clazz == null) {
+            notifications.create("Chưa hỗ trợ loại: " + type).show();
+            return null;
+        }
+
+        // Tạo Fragment động thông qua Bean Fragments
+        io.jmix.flowui.fragment.Fragment<?> fragment = fragments.create(this, clazz);
+
+        if (fragment instanceof ChartConfigFragment configFrag) {
+            // Nạp dữ liệu cột ngay khi tạo mới
+            configFrag.setAvailableFields(allColumnNames);
+
+            fragmentCache.put(type, configFrag);
+            return configFrag;
+        }
+        throw new IllegalStateException("Fragment must implement ChartConfigFragment");
     }
 
     private ChartConfigFragment getCurrentFragment() {
-        return fragmentMap.get(chartType);
+        return fragmentCache.get(currentChartType);
+    }
+
+    // ==========================================================
+    // INIT DATA
+    // ==========================================================
+    public void initParams(UUID datasetId, ChartType chartType) {
+        this.editingConfig = null;
+        this.datasetId = datasetId;
+        loadDatasetCommon();
+
+        // Chọn tab
+        selectTabByType(chartType);
+    }
+
+    public void initFromExisting(UUID chartConfigId) {
+        this.editingConfig = dataManager.load(ChartConfig.class).id(chartConfigId).one();
+        this.datasetId = editingConfig.getDataset().getId();
+        this.chartNameField.setValue(editingConfig.getName());
+
+        loadDatasetCommon();
+
+        // Chọn tab & Load JSON
+        selectTabByType(editingConfig.getChartType());
+
+        try {
+            JsonNode node = objectMapper.readTree(editingConfig.getSettingsJson());
+            if (getCurrentFragment() != null) {
+                getCurrentFragment().setConfigurationJson(node);
+            }
+        } catch (Exception e) {
+            notifications.create("Error loading config").show();
+        }
+    }
+
+    private void selectTabByType(ChartType type) {
+        tabMap.forEach((tab, t) -> {
+            if (t == type) chartTypeTabs.setSelectedTab(tab);
+        });
+        // Nếu tab không đổi (vẫn là tab mặc định), listener ko chạy -> gọi thủ công
+        if (currentChartType != type) {
+            switchChartType(type);
+        }
     }
 
     private void loadDatasetCommon() {
         dataset = dataManager.load(Dataset.class).id(datasetId).one();
         datasetNameLabel.setText(dataset.getName());
 
-        fieldsList.removeAll();
-
-        // 1. Tạo danh sách chứa tên cột để truyền cho Fragment
-        List<String> allColumns = new ArrayList<>();
+        allFieldItems.clear();
+        allColumnNames.clear();
 
         try {
             JsonNode root = objectMapper.readTree(dataset.getSchemaJson());
@@ -150,41 +227,62 @@ public class ChartConfigView extends StandardView {
                 for (JsonNode col : root) {
                     String name = col.path("name").asText();
                     String type = col.path("type").asText("string");
-
-                    // Tạo UI kéo thả
-                    addDraggableField(name, type);
-
-                    // 2. Thêm vào danh sách cột
-                    allColumns.add(name);
+                    allFieldItems.add(new FieldItem(name, type));
+                    allColumnNames.add(name);
                 }
             }
-        } catch (Exception e) {
-            notifications.create("Lỗi đọc Schema").show();
-        }
+        } catch (Exception e) {}
 
-        // 3. QUAN TRỌNG: Truyền danh sách cột vào TẤT CẢ Fragment
-        // Nếu thiếu dòng này, Dialog sẽ bị null list và gây lỗi
-        if (!fragmentMap.isEmpty()) {
-            fragmentMap.values().forEach(frag -> frag.setAvailableFields(allColumns));
+        // Setup ListBox Renderer (Drag Source)
+        fieldsList.setItems(allFieldItems);
+        fieldsList.setRenderer(new ComponentRenderer<>(item -> {
+            NativeLabel lbl = new NativeLabel("# " + item.getName());
+            lbl.getStyle()
+                    .setDisplay(Style.Display.FLEX).setWidth("100%")
+                    .setPadding("6px 12px").setBoxSizing(Style.BoxSizing.BORDER_BOX)
+                    .setCursor("grab").setMarginBottom("4px")
+                    .setBorder("1px solid #e0e0e0").setBorderRadius("6px")
+                    .setBackgroundColor("white").setFontSize("13px").setFontWeight("500");
+
+            // Metadata for DropZoneUtils
+            lbl.getElement().setAttribute("data-field-name", item.getName());
+            DragSource.create(lbl).setDragData(item.getName());
+            return lbl;
+        }));
+
+        // Cập nhật columns cho các fragment đã cache (nếu có)
+        fragmentCache.values().forEach(f -> f.setAvailableFields(allColumnNames));
+    }
+
+    private void doSearch() {
+        String keyword = searchField.getValue() != null ? searchField.getValue().toLowerCase().trim() : "";
+        if (keyword.isEmpty()) {
+            fieldsList.setItems(allFieldItems);
+        } else {
+            List<FieldItem> filtered = allFieldItems.stream()
+                    .filter(i -> i.getName().toLowerCase().contains(keyword))
+                    .collect(Collectors.toList());
+            fieldsList.setItems(filtered);
         }
     }
 
-    @Subscribe(id = "previewBtn", subject = "clickListener")
-    public void onPreviewBtnClick(ClickEvent<JmixButton> event) {
-        ChartConfigFragment fragment = getCurrentFragment();
-
-        if (!fragment.isValid()) {
-            notifications.create("Vui lòng điền đầy đủ thông tin cấu hình").show();
+    // ==========================================================
+    // ACTIONS
+    // ==========================================================
+    @Subscribe("previewBtn")
+    public void onPreview() {
+        ChartConfigFragment frag = getCurrentFragment();
+        if (frag == null || !frag.isValid()) {
+            notifications.create("Cấu hình chưa hợp lệ").show();
             return;
         }
-
-        String json = fragment.getConfigurationJson().toString();
+        String json = frag.getConfigurationJson().toString();
 
         chartContainer.removeAll();
         try {
-            Chart chart = chartConfigService.buildPreviewChart(dataset, chartType, json);
+            Chart chart = chartConfigService.buildPreviewChart(dataset, currentChartType, json);
             chart.setWidthFull();
-            chart.setHeight("400px");
+            chart.setHeight("100%");
             chartContainer.add(chart);
         } catch (Exception e) {
             notifications.create("Render error: " + e.getMessage()).show();
@@ -192,62 +290,26 @@ public class ChartConfigView extends StandardView {
         }
     }
 
-    @Subscribe(id = "save", subject = "clickListener")
-    public void onSaveClick(ClickEvent<JmixButton> event) {
+    @Subscribe("save")
+    public void onSave() {
         if (chartNameField.isEmpty()) {
             notifications.create("Nhập tên biểu đồ").show();
             return;
         }
-
-        ChartConfigFragment fragment = getCurrentFragment();
-        if (!fragment.isValid()) {
-            notifications.create("Cấu hình không hợp lệ").show();
+        ChartConfigFragment frag = getCurrentFragment();
+        if (frag == null || !frag.isValid()) {
+            notifications.create("Cấu hình chưa hợp lệ").show();
             return;
         }
 
         ChartConfig config = (editingConfig != null) ? editingConfig : dataManager.create(ChartConfig.class);
         config.setName(chartNameField.getValue().toString());
         config.setDataset(dataset);
-        config.setChartType(chartType);
-        config.setSettingsJson(fragment.getConfigurationJson().toString());
+        config.setChartType(currentChartType);
+        config.setSettingsJson(frag.getConfigurationJson().toString());
 
         dataManager.save(config);
-        notifications.create("✅ Saved!").show();
+        notifications.create("Đã lưu!").show();
         viewNavigators.view(this, ChartConfigListView.class).navigate();
-    }
-
-    private void addDraggableField(String name, String type) {
-        NativeLabel lbl = new NativeLabel("# " + name); // Thêm icon text tượng trưng
-
-        // Style giống Card nhỏ
-        lbl.getStyle()
-                .setDisplay(Style.Display.FLEX)
-                .setWidth("100%")
-                .setHeight("32px") // Cao hơn chút cho dễ nhìn
-                .setBoxSizing(Style.BoxSizing.BORDER_BOX)
-                .setAlignItems(Style.AlignItems.CENTER)
-                .setPadding("0 12px")
-                .setCursor("grab") // SỬA TYPO: crab -> grab
-                .setMarginBottom("6px")
-                .setBorderRadius("6px")
-                .setBackgroundColor("#ffffff")
-                .setBorder("1px solid #e0e0e0")
-                .setFontSize("13px")
-                .setFontWeight("500")
-                .set("user-select", "none")
-                .set("transition", "all 0.2s");
-
-        // Hover effect
-        lbl.getElement().addEventListener("mouseenter", e ->
-                lbl.getStyle().setBorder("1px solid var(--lumo-primary-color)"));
-        lbl.getElement().addEventListener("mouseleave", e ->
-                lbl.getStyle().setBorder("1px solid #e0e0e0"));
-
-        lbl.getElement().setAttribute("data-field-name", name);
-
-        DragSource<NativeLabel> dragSource = DragSource.create(lbl);
-        dragSource.setDragData(name);
-
-        fieldsList.add(lbl);
     }
 }
