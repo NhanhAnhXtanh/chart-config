@@ -1,12 +1,40 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
-        <vbox id="root" width="100%" spacing="false" padding="false" css=" overflow: hidden;">
+        <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
 
-            <!-- Label Field -->
-                <span text="Label Field" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                <div id="labelDropZone" classNames="chart-drop-zone"/>
-                <span text="Value Field" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                <div id="valueDropZone" classNames="chart-drop-zone"/>
+            <!-- SECTION 1: DIMENSION -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Dimension" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="dimensionDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 2: METRIC -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Metric" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="metricDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 3: FILTERS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Filters" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 4: OPTIONS -->
+            <details summaryText="Options" themeNames="small" opened="true">
+                <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+
+                    <checkbox id="donutCheckbox" label="Donut Chart"/>
+
+                    <vbox spacing="false" padding="false" css="gap: 4px;">
+                        <hbox css="align-items: center; gap: 6px;">
+                            <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                        </hbox>
+                        <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"/>
+                    </vbox>
+                </vbox>
+            </details>
+
         </vbox>
     </content>
 </fragment>
