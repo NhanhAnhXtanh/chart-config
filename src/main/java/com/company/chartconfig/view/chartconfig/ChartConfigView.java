@@ -68,6 +68,8 @@ public class ChartConfigView extends StandardView {
         fragmentMap.put(ChartType.BAR, barConfig);
         fragmentMap.put(ChartType.PIE, pieConfig);
 
+        fragmentMap.values().forEach(f -> f.setVisible(false));
+
         // 2. Setup tìm kiếm (Enter hoặc Text ChangeMode.EAGER nếu muốn)
         searchField.addKeyPressListener(Key.ENTER, e -> doSearch());
         // Hoặc tìm kiếm ngay khi gõ (Bỏ comment dòng dưới nếu muốn)
