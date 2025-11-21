@@ -4,7 +4,6 @@ import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.model.ChartCommonSettings;
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
-import com.company.chartconfig.service.processor.ChartDataProcessor;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,9 +39,6 @@ public class LineChartBuilder implements ChartBuilder {
     private final ChartDataAggregator aggregator;
     private final ChartDataFilter dataFilter;
 
-    // Không dùng Processor mặc định để tránh việc nó sort lại theo Metric
-    // private final ChartDataProcessor dataProcessor;
-
     public LineChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
                             ChartDataAggregator aggregator, ChartDataFilter dataFilter) {
         this.uiComponents = uiComponents;
@@ -62,6 +58,9 @@ public class LineChartBuilder implements ChartBuilder {
         // 1. Parse Config
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
+
+        // [FIX 1] Đọc Row Limit từ JSON
+        int rowLimit = root.path("rowLimit").asInt(0);
 
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) {
@@ -89,7 +88,6 @@ public class LineChartBuilder implements ChartBuilder {
         List<MapDataItem> chartData = aggregator.aggregate(filtered, xAxisField, metrics);
 
         // 2.3 [QUAN TRỌNG] SORT BY X-AXIS ASCENDING
-        // Logic này đảm bảo ngày tháng/số thứ tự tăng dần
         chartData.sort((o1, o2) -> {
             Object v1 = o1.getValue(xAxisField);
             Object v2 = o2.getValue(xAxisField);
@@ -98,16 +96,19 @@ public class LineChartBuilder implements ChartBuilder {
             if (v1 == null) return -1;
             if (v2 == null) return 1;
 
-            // So sánh an toàn (String Date, Number, hoặc String thường)
             if (v1 instanceof Comparable && v2 instanceof Comparable) {
                 return ((Comparable) v1).compareTo(v2);
             }
-            // Fallback về String comparison
             return v1.toString().compareTo(v2.toString());
         });
 
-        // *Lưu ý*: Ta bỏ qua bước dataProcessor.process() vì nó sẽ sort lại theo Metric giảm dần (Top N)
-        // Nếu cần tính năng Contribution Mode cho Line, ta có thể gọi riêng hàm đó, nhưng thường Line ít dùng stack 100%.
+        // [FIX 2] Xử lý Row Limit (Thủ công)
+        // Logic: Nếu dữ liệu > limit, lấy N dòng CUỐI CÙNG (tương ứng với dữ liệu mới nhất theo thời gian)
+        if (rowLimit > 0 && chartData.size() > rowLimit) {
+            int fromIndex = chartData.size() - rowLimit;
+            // Wrap lại thành ArrayList mới để đảm bảo tính mutable nếu cần
+            chartData = new ArrayList<>(chartData.subList(fromIndex, chartData.size()));
+        }
 
         // 3. Build UI Container
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
@@ -160,7 +161,7 @@ public class LineChartBuilder implements ChartBuilder {
         for (MetricConfig m : metrics) {
             LineSeries series = new LineSeries();
             series.setName(m.getLabel());
-//            series.setSmooth(true); // Làm mềm đường
+            // series.setSmooth(true);
 
             Encode encode = new Encode();
             encode.setX(xAxisField);
