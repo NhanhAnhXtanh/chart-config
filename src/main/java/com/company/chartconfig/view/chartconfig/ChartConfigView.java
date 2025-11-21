@@ -5,6 +5,7 @@ import com.company.chartconfig.entity.Dataset;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.service.ChartConfigService;
 import com.company.chartconfig.view.chartfragment.BarConfigFragment;
+import com.company.chartconfig.view.chartfragment.LineConfigFragment;
 import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
 import com.company.chartconfig.view.main.MainView;
@@ -42,31 +43,47 @@ public class ChartConfigView extends StandardView {
     private Dataset dataset;
     private ChartConfig editingConfig;
 
-    @Autowired private DataManager dataManager;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private Notifications notifications;
-    @Autowired private ChartConfigService chartConfigService;
-    @Autowired private ViewNavigators viewNavigators;
+    @Autowired
+    private DataManager dataManager;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private Notifications notifications;
+    @Autowired
+    private ChartConfigService chartConfigService;
+    @Autowired
+    private ViewNavigators viewNavigators;
 
     // UI Components
-    @ViewComponent private NativeLabel datasetNameLabel;
-    @ViewComponent private NativeLabel chartTypeLabel;
-    @ViewComponent private TypedTextField<Object> chartNameField;
+    @ViewComponent
+    private NativeLabel datasetNameLabel;
+    @ViewComponent
+    private NativeLabel chartTypeLabel;
+    @ViewComponent
+    private TypedTextField<Object> chartNameField;
 
-    @ViewComponent private VerticalLayout fieldsList;
-    @ViewComponent private TypedTextField<String> searchField; // Ô tìm kiếm
+    @ViewComponent
+    private VerticalLayout fieldsList;
+    @ViewComponent
+    private TypedTextField<String> searchField; // Ô tìm kiếm
 
-    @ViewComponent private VerticalLayout chartContainer;
+    @ViewComponent
+    private VerticalLayout chartContainer;
 
     // Inject Fragments
-    @ViewComponent private BarConfigFragment barConfig;
-    @ViewComponent private PieConfigFragment pieConfig;
+    @ViewComponent
+    private BarConfigFragment barConfig;
+    @ViewComponent
+    private PieConfigFragment pieConfig;
+    @ViewComponent
+    private LineConfigFragment lineConfig;
 
     @Subscribe
     public void onInit(final InitEvent event) {
         // 1. Đăng ký các fragment vào Map
         fragmentMap.put(ChartType.BAR, barConfig);
         fragmentMap.put(ChartType.PIE, pieConfig);
+        fragmentMap.put(ChartType.LINE, lineConfig);
 
         fragmentMap.values().forEach(f -> f.setVisible(false));
 
@@ -89,6 +106,7 @@ public class ChartConfigView extends StandardView {
             }
         });
     }
+
     // =============================
     // INIT PARAMS (CREATE MODE)
     // =============================

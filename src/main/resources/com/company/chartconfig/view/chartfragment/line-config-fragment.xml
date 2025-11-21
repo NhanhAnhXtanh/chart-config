@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <content>
+        <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
+
+            <!-- 1. X-AXIS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <hbox css="align-items: center; gap: 4px;">
+                    <span text="X-axis" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                    <icon icon="INFO_CIRCLE_O" css="width: 12px; height: 12px; color: #999;"/>
+                </hbox>
+                <div id="xDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- 2. METRICS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <hbox css="align-items: center; gap: 4px;">
+                    <span text="Metrics" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                    <icon icon="INFO_CIRCLE_O" css="width: 12px; height: 12px; color: #999;"/>
+                </hbox>
+                <div id="metricsDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- 3. DIMENSIONS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <hbox css="align-items: center; gap: 4px;">
+                    <span text="Dimensions" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                    <icon icon="INFO_CIRCLE_O" css="width: 12px; height: 12px; color: #999;"/>
+                </hbox>
+                <div id="dimensionsDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- 4. FILTERS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Filters" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- 5. LIMITS -->
+            <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+
+                <!-- Series Limit -->
+                <vbox spacing="false" padding="false" css="gap: 4px;">
+                    <span text="Series Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                    <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"/>
+                </vbox>
+
+                <!-- Row Limit -->
+                <vbox spacing="false" padding="false" css="gap: 4px;">
+                    <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                    <comboBox id="rowLimitField" width="100%" allowCustomValue="true"/>
+                </vbox>
+            </vbox>
+        </vbox>
+    </content>
+</fragment>

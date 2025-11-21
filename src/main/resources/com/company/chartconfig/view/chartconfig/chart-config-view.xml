@@ -126,6 +126,8 @@
                                   class="com.company.chartconfig.view.chartfragment.BarConfigFragment"/>
                         <fragment id="pieConfig"
                                   class="com.company.chartconfig.view.chartfragment.PieConfigFragment"/>
+                        <fragment id="lineConfig"
+                                  class="com.company.chartconfig.view.chartfragment.LineConfigFragment"/>
                     </vbox>
 
                     <vbox width="100%" css="gap: 10px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--lumo-contrast-10pct); flex-shrink: 0;">

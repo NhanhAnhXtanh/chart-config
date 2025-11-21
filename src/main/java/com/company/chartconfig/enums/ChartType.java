@@ -8,7 +8,8 @@ import org.springframework.lang.Nullable;
 public enum ChartType implements EnumClass<String> {
 
     BAR("BAR"),
-    PIE("PIE");
+    PIE("PIE"),
+    LINE("LINE");
 
     private final String id;
 
