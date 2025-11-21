@@ -1,0 +1,333 @@
+/* Fixed Asset Detail View - Professional Styling */
+
+/* Header Container */
+.edit-view-header-container {
+    background: linear-gradient(135deg, var(--lumo-primary-color) 0%, var(--lumo-primary-color-70pct) 100%);
+    color: var(--lumo-primary-contrast-color);
+    padding: 1rem 1.5rem;
+    border-radius: 0 0 1rem 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 1.5rem;
+}
+
+.edit-view-header-container .edit-view-title {
+    font-size: var(--lumo-font-size-s);
+    opacity: 0.9;
+    margin-bottom: 0.25rem;
+}
+
+.edit-view-header-container h2 {
+    margin: 0;
+    font-size: var(--lumo-font-size-xxl);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.edit-view-header-container button {
+    color: var(--lumo-primary-contrast-color);
+    border-color: rgba(255, 255, 255, 0.3);
+    transition: all 0.2s ease;
+}
+
+.edit-view-header-container button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Tab Sheet Styling */
+#tabSheet {
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+#tabSheet vaadin-tab {
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#tabSheet vaadin-tab:hover {
+    background-color: var(--lumo-tint-10pct);
+}
+
+#tabSheet vaadin-tab[selected] {
+    background-color: var(--lumo-primary-color-10pct);
+    color: var(--lumo-primary-color);
+    border-bottom: 3px solid var(--lumo-primary-color);
+}
+
+/* Form Layout Improvements */
+.formLayout {
+    padding: 1.5rem;
+    background: var(--lumo-base-color);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.formLayout vaadin-text-field,
+.formLayout vaadin-text-area,
+.formLayout vaadin-select,
+.formLayout vaadin-date-picker,
+.formLayout vaadin-checkbox,
+.formLayout vaadin-radio-group {
+    margin-bottom: 1rem;
+}
+
+/* Input Field Styling */
+.formLayout vaadin-text-field,
+.formLayout vaadin-text-area,
+.formLayout vaadin-select,
+.formLayout vaadin-date-picker {
+    --vaadin-input-field-border-radius: 0.5rem;
+    --vaadin-input-field-border-width: 1px;
+    --vaadin-input-field-border-color: var(--lumo-contrast-20pct);
+    --vaadin-input-field-background: var(--lumo-base-color);
+    --vaadin-input-field-hover-border-color: var(--lumo-primary-color-50pct);
+    --vaadin-input-field-focus-border-color: var(--lumo-primary-color);
+    --vaadin-input-field-focus-ring: 0 0 0 3px var(--lumo-primary-color-20pct);
+    transition: all 0.2s ease;
+}
+
+.formLayout vaadin-text-field:hover,
+.formLayout vaadin-text-area:hover,
+.formLayout vaadin-select:hover,
+.formLayout vaadin-date-picker:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Label Styling */
+.formLayout vaadin-text-field::part(label),
+.formLayout vaadin-text-area::part(label),
+.formLayout vaadin-select::part(label),
+.formLayout vaadin-date-picker::part(label) {
+    font-weight: 600;
+    color: var(--lumo-header-text-color);
+    font-size: var(--lumo-font-size-s);
+    margin-bottom: 0.5rem;
+}
+
+/* Required Field Indicator */
+.formLayout vaadin-text-field[required]::part(label)::after,
+.formLayout vaadin-text-area[required]::part(label)::after,
+.formLayout vaadin-select[required]::part(label)::after,
+.formLayout vaadin-date-picker[required]::part(label)::after {
+    content: " *";
+    color: var(--lumo-error-color);
+    font-weight: 700;
+}
+
+/* Split Layout Styling */
+.split {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.split vaadin-split-layout {
+    background: var(--lumo-base-color);
+}
+
+/* Left and Right Boxes */
+#leftBox,
+#assetDetailMoreInfoVBox {
+    padding: 1.5rem;
+    background: var(--lumo-base-color);
+}
+
+#assetDetailMoreInfoVBox {
+    background: linear-gradient(135deg, var(--lumo-tint-5pct) 0%, var(--lumo-tint-10pct) 100%);
+    border-left: 1px solid var(--lumo-contrast-10pct);
+}
+
+#assetDetailMoreInfoVBox span {
+    font-size: var(--lumo-font-size-l);
+    font-weight: 600;
+    color: var(--lumo-header-text-color);
+    margin-bottom: 1rem;
+    display: block;
+    padding: 0.75rem;
+    background: var(--lumo-base-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--lumo-contrast-10pct);
+}
+
+/* Batch Info Form */
+#batchInfoForm {
+    background: linear-gradient(135deg, var(--lumo-warning-color-10pct) 0%, var(--lumo-warning-color-5pct) 100%);
+    border: 1px solid var(--lumo-warning-color-30pct);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+#batchInfoForm::before {
+    content: "📦 Thông tin Lô";
+    display: block;
+    font-weight: 600;
+    color: var(--lumo-warning-color);
+    margin-bottom: 1rem;
+    font-size: var(--lumo-font-size-s);
+}
+
+/* Data Grid Styling */
+#fixedAssetsDataGrid {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+#fixedAssetsDataGrid vaadin-grid {
+    --vaadin-grid-border-color: var(--lumo-contrast-10pct);
+    --vaadin-grid-row-hover-background-color: var(--lumo-tint-10pct);
+    --vaadin-grid-selected-row-background-color: var(--lumo-primary-color-10pct);
+}
+
+#fixedAssetsDataGrid vaadin-grid-column {
+    font-weight: 500;
+}
+
+#fixedAssetsDataGrid vaadin-grid-column-header {
+    background: var(--lumo-tint-5pct);
+    font-weight: 600;
+    color: var(--lumo-header-text-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .edit-view-header-container {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .edit-view-header-container h2 {
+        font-size: var(--lumo-font-size-xl);
+    }
+    
+    .formLayout {
+        padding: 1rem;
+    }
+    
+    #leftBox,
+    #assetDetailMoreInfoVBox {
+        padding: 1rem;
+    }
+    
+    .split {
+        flex-direction: column;
+    }
+    
+    #assetDetailMoreInfoVBox {
+        border-left: none;
+        border-top: 1px solid var(--lumo-contrast-10pct);
+    }
+}
+
+/* Animation Effects */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.formLayout,
+#leftBox,
+#assetDetailMoreInfoVBox {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* Focus States */
+.formLayout vaadin-text-field:focus-within,
+.formLayout vaadin-text-area:focus-within,
+.formLayout vaadin-select:focus-within,
+.formLayout vaadin-date-picker:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Button Styling */
+#saveAndCloseButton,
+#closeButton {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+#saveAndCloseButton {
+    background: var(--lumo-success-color);
+    color: var(--lumo-success-contrast-color);
+    border: none;
+}
+
+#saveAndCloseButton:hover {
+    background: var(--lumo-success-color-90pct);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+#closeButton {
+    background: transparent;
+    color: var(--lumo-primary-contrast-color);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#closeButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Back Button Styling */
+#backButton {
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    transition: all 0.2s ease;
+}
+
+#backButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Tab Content Animation */
+#tabSheet vaadin-tab-panel {
+    animation: fadeInUp 0.2s ease-out;
+}
+
+/* Form Field Groups */
+.formLayout vaadin-text-field[colspan="2"],
+.formLayout vaadin-text-area[colspan="2"],
+.formLayout vaadin-select[colspan="2"] {
+    grid-column: span 2;
+}
+
+/* Enhanced Visual Hierarchy */
+.formLayout > *:first-child {
+    margin-top: 0;
+}
+
+.formLayout > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Status Indicators */
+.formLayout vaadin-checkbox[checked] {
+    --vaadin-checkbox-checked-background: var(--lumo-success-color);
+    --vaadin-checkbox-checked-border-color: var(--lumo-success-color);
+}
+
+.formLayout vaadin-radio-group vaadin-radio-button[checked] {
+    --vaadin-radio-button-checked-background: var(--lumo-primary-color);
+    --vaadin-radio-button-checked-border-color: var(--lumo-primary-color);
+}
+

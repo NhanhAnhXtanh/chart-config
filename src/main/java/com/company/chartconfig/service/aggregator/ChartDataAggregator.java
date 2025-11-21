@@ -1,6 +1,5 @@
 package com.company.chartconfig.service.aggregator;
 
-import com.company.chartconfig.enums.ContributionMode;
 import com.company.chartconfig.view.common.MetricConfig;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import org.springframework.stereotype.Component;
@@ -13,12 +12,10 @@ import java.util.stream.Collectors;
 @Component
 public class ChartDataAggregator {
 
-    public List<MapDataItem> aggregate(List<MapDataItem> rawData,
-                                       String dimension,
-                                       List<MetricConfig> metrics,
-                                       ContributionMode contributionMode) {
+    // BỎ tham số ContributionMode - Aggregator chỉ tính toán cơ bản
+    public List<MapDataItem> aggregate(List<MapDataItem> rawData, String dimension, List<MetricConfig> metrics) {
 
-        // 1. Group by Dimension
+        // 1. Group by Dimension (Fix null key)
         Map<Object, List<MapDataItem>> grouped = rawData.stream()
                 .collect(Collectors.groupingBy(item -> {
                     Object val = item.getValue(dimension);
@@ -27,7 +24,7 @@ public class ChartDataAggregator {
 
         List<MapDataItem> result = new ArrayList<>();
 
-        // 2. Tính toán Metrics cơ bản
+        // 2. Calculate Base Metrics (SUM, COUNT...)
         for (Map.Entry<Object, List<MapDataItem>> entry : grouped.entrySet()) {
             MapDataItem row = new MapDataItem();
             row.add(dimension, entry.getKey());
@@ -39,45 +36,7 @@ public class ChartDataAggregator {
             result.add(row);
         }
 
-        // 3. Tính toán Contribution (Dùng Enum Switch case chuẩn)
-        if (contributionMode == null) contributionMode = ContributionMode.NONE;
-
-        switch (contributionMode) {
-            case SERIES -> applySeriesContribution(result, metrics);
-            case ROW -> applyRowContribution(result, metrics);
-            default -> {} // None: Do nothing
-        }
-
         return result;
-    }
-
-    // Mode SERIES: % của dòng so với tổng cột
-    private void applySeriesContribution(List<MapDataItem> data, List<MetricConfig> metrics) {
-        for (MetricConfig m : metrics) {
-            double total = data.stream().mapToDouble(item -> (double) item.getValue(m.getLabel())).sum();
-            if (total != 0) {
-                for (MapDataItem item : data) {
-                    double val = (double) item.getValue(m.getLabel());
-                    item.add(m.getLabel(), (val / total) * 100.0);
-                }
-            }
-        }
-    }
-
-    // Mode ROW: % của metric so với tổng dòng
-    private void applyRowContribution(List<MapDataItem> data, List<MetricConfig> metrics) {
-        for (MapDataItem item : data) {
-            double rowTotal = 0;
-            for (MetricConfig m : metrics) {
-                rowTotal += (double) item.getValue(m.getLabel());
-            }
-            if (rowTotal != 0) {
-                for (MetricConfig m : metrics) {
-                    double val = (double) item.getValue(m.getLabel());
-                    item.add(m.getLabel(), (val / rowTotal) * 100.0);
-                }
-            }
-        }
     }
 
     private double calculateMetric(List<MapDataItem> items, String col, String aggType) {

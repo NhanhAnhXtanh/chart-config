@@ -1,0 +1,13 @@
+
+vaadin-notification-card[theme="success"]::part(overlay){
+    background: #beffc1 !important;
+    color: #005c00;
+}
+
+vaadin-notification-card[theme="warning"]::part(overlay){
+    background: #fff2a3 !important;
+    color: #775300;
+}
+vaadin-notification-card[theme~='warning'] .jmix-text-layout-closeable .title, vaadin-notification-card[theme~='warning'] .jmix-text-layout .title {
+    color: #775300;
+}

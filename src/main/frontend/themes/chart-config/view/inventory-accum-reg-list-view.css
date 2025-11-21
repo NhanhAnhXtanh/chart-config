@@ -1,0 +1,70 @@
+/* Tài sản: in đậm, căn trái */
+vaadin-grid::part(asset) {
+    font-weight: bold;
+    text-align: left;
+}
+
+/* Tồn đầu kỳ */
+vaadin-grid::part(balance-start) {
+    color: #333;
+    font-weight: 500;
+    text-align: right;
+}
+
+/* Nhập trong kỳ (xanh lá cây) */
+vaadin-grid::part(incoming) {
+    color: green;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Xuất trong kỳ (đỏ) */
+vaadin-grid::part(outgoing) {
+    color: red;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Tồn cuối kỳ */
+vaadin-grid::part(balance-end) {
+    color: #444;
+    font-weight: 600;
+    text-align: right;
+}
+/* Footer tổng (cột Tài sản) */
+vaadin-grid::part(footer-asset) {
+    font-weight: 900;
+    font-size: 16px;
+}
+
+/* Footer tồn đầu kỳ */
+vaadin-grid::part(footer-sum) {
+    font-weight: 800;
+    font-size: 15px;
+    color: #333;
+    text-align: right;
+}
+
+/* Footer nhập trong kỳ */
+vaadin-grid::part(footer-incoming) {
+    font-weight: 800;
+    font-size: 15px;
+    color: green;
+    text-align: right;
+}
+
+/* Footer xuất trong kỳ */
+vaadin-grid::part(footer-outgoing) {
+    font-weight: 800;
+    font-size: 15px;
+    color: red;
+    text-align: right;
+}
+
+/* Footer tồn cuối kỳ */
+vaadin-grid::part(footer-end) {
+    font-weight: 900;
+    font-size: 16px;
+    color: #444;
+    text-align: right;
+}

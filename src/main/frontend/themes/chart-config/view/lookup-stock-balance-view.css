@@ -1,0 +1,94 @@
+/* Stock Balance View Styles */
+
+.summary-panel {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 8px 0;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #495057;
+    margin-right: 8px;
+}
+
+.summary-value {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.summary-value.positive {
+    color: #28a745;
+}
+
+.summary-value.negative {
+    color: #dc3545;
+}
+
+/* Movement type styling */
+.income-movement {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.outcome-movement {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Quantity styling */
+.positive-quantity {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.negative-quantity {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Filter panel styling */
+.filter-panel {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+/* Data grid styling */
+.column-borders {
+    border: 1px solid #dee2e6;
+}
+
+.column-borders .jmix-data-grid-column {
+    border-right: 1px solid #dee2e6;
+}
+
+/* Button styling */
+.buttons-panel {
+    gap: 8px;
+}
+
+/* Search field styling */
+.search-field {
+    border-radius: 20px;
+}
+
+.search-field .vaadin-text-field-container {
+    border-radius: 20px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .summary-panel {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .summary-panel hbox {
+        justify-content: space-between;
+    }
+} 

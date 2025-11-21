@@ -1,9 +1,10 @@
 package com.company.chartconfig.service.builder;
 
 import com.company.chartconfig.enums.ChartType;
-import com.company.chartconfig.enums.ContributionMode; // Import Enum
+import com.company.chartconfig.model.ChartCommonSettings; // DTO chứa setting
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
+import com.company.chartconfig.service.processor.ChartDataProcessor; // Processor mới
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +26,7 @@ import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.model.DataComponents;
 import io.jmix.flowui.model.KeyValueCollectionContainer;
 import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,24 +37,26 @@ public class BarChartBuilder implements ChartBuilder {
     private final ChartDataAggregator aggregator;
     private final DataComponents dataComponents;
     private final ChartDataFilter dataFilter;
+    private final ChartDataProcessor dataProcessor; // Inject Processor
 
-    public BarChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, ChartDataAggregator aggregator, DataComponents dataComponents, ChartDataFilter dataFilter) {
+    public BarChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper,
+                           ChartDataAggregator aggregator, DataComponents dataComponents,
+                           ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
         this.aggregator = aggregator;
         this.dataComponents = dataComponents;
         this.dataFilter = dataFilter;
+        this.dataProcessor = dataProcessor;
     }
 
     @Override public boolean supports(ChartType type) { return type == ChartType.BAR; }
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
-        String xField = root.path("xAxis").asText();
-
-        // Parse Enum Contribution Mode
-        String modeStr = root.path("contributionMode").asText("none");
-        ContributionMode contribMode = ContributionMode.fromId(modeStr);
+        // 1. Parse Config
+        ChartCommonSettings settings = new ChartCommonSettings(root); // Helper DTO
+        String xField = settings.getXAxisField();
 
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
@@ -62,15 +66,20 @@ public class BarChartBuilder implements ChartBuilder {
 
         if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu X hoặc Metric");
 
-        // 1. Filter & Aggregate
+        // 2. PIPELINE XỬ LÝ (Filter -> Aggregate -> PostProcess)
+
+        // B1: Filter
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
 
-        // Truyền Enum vào Aggregator
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, xField, metrics, contribMode);
-
+        // B2: Aggregate (CHỈ 3 THAM SỐ - Đã sửa lỗi)
+        List<MapDataItem> chartData = aggregator.aggregate(filtered, xField, metrics);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 2. Create Container (Jmix Serializer)
+        // B3: Post Process (Tính %, Limit Top N)
+        dataProcessor.process(chartData, metrics, settings);
+
+
+        // 3. Create Container (Jmix Serializer)
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -84,7 +93,7 @@ public class BarChartBuilder implements ChartBuilder {
         }
         container.setItems(entities);
 
-        // 3. UI
+        // 4. UI
         Chart chart = uiComponents.create(Chart.class);
         chart.setWidth("100%"); chart.setHeight("100%");
 
@@ -104,11 +113,12 @@ public class BarChartBuilder implements ChartBuilder {
             BarSeries s = new BarSeries();
             s.setType(SeriesType.BAR);
 
-            // Logic Stack dựa trên Enum
-            if (contribMode == ContributionMode.ROW) {
+            // Logic Stack (Đọc từ Settings)
+            com.company.chartconfig.enums.ContributionMode mode = settings.getContributionMode();
+            if (mode == com.company.chartconfig.enums.ContributionMode.ROW) {
                 s.setStack("total");
                 s.setName(m.getLabel() + " (%)");
-            } else if (contribMode == ContributionMode.SERIES) {
+            } else if (mode == com.company.chartconfig.enums.ContributionMode.SERIES) {
                 s.setName(m.getLabel() + " (%)");
             } else {
                 s.setName(m.getLabel());
