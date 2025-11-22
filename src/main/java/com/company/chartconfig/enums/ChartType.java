@@ -8,7 +8,8 @@ public enum ChartType implements EnumClass<String> {
 
     // Thêm tham số Icon vào đây
     BAR("BAR", VaadinIcon.BAR_CHART),
-    PIE("PIE", VaadinIcon.PIE_CHART);
+    PIE("PIE", VaadinIcon.PIE_CHART),
+    LINE("LINE", VaadinIcon.LINE_CHART);
 
     private final String id;
     private final VaadinIcon icon; // <-- Thêm field icon
@@ -24,7 +25,6 @@ public enum ChartType implements EnumClass<String> {
         return icon;
     }
 
-    @Override
     public String getId() {
         return id;
     }

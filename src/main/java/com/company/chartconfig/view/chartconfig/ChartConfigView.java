@@ -7,6 +7,10 @@ import com.company.chartconfig.model.FieldItem;
 import com.company.chartconfig.service.ChartConfigService;
 import com.company.chartconfig.view.config.ChartFragmentRegistry;
 import com.company.chartconfig.view.config.common.ChartConfigFragment;
+import com.company.chartconfig.view.chartfragment.BarConfigFragment;
+import com.company.chartconfig.view.chartfragment.LineConfigFragment;
+import com.company.chartconfig.view.chartfragment.PieConfigFragment;
+import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
 import com.company.chartconfig.view.main.MainView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,21 +48,32 @@ import java.util.stream.Collectors;
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
 
-    @Autowired private DataManager dataManager;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private Notifications notifications;
-    @Autowired private ChartConfigService chartConfigService;
-    @Autowired private ViewNavigators viewNavigators;
+    @Autowired
+    private DataManager dataManager;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private Notifications notifications;
+    @Autowired
+    private ChartConfigService chartConfigService;
+    @Autowired
+    private ViewNavigators viewNavigators;
     @Autowired private Fragments fragments;
     @Autowired private ChartFragmentRegistry fragmentRegistry;
 
-    @ViewComponent private NativeLabel datasetNameLabel;
-    @ViewComponent private TypedTextField<Object> chartNameField;
-    @ViewComponent private TypedTextField<String> searchField;
-    @ViewComponent private ListBox<FieldItem> fieldsList;
-    @ViewComponent private Tabs chartTypeTabs;
+    @ViewComponent
+    private NativeLabel datasetNameLabel;
+    @ViewComponent
+    private TypedTextField<Object> chartNameField;
+    @ViewComponent
+    private TypedTextField<String> searchField;
+    @ViewComponent
+    private ListBox<FieldItem> fieldsList;
+    @ViewComponent
+    private Tabs chartTypeTabs;
     @ViewComponent private VerticalLayout fragmentContainer;
-    @ViewComponent private VerticalLayout chartContainer;
+    @ViewComponent
+    private VerticalLayout chartContainer;
     @ViewComponent private JmixButton save;
 
     private UUID datasetId;
@@ -73,6 +88,8 @@ public class ChartConfigView extends StandardView {
 
     private final Map<ChartType, ChartConfigFragment> fragmentCache = new HashMap<>();
     private final Map<Tab, ChartType> tabMap = new HashMap<>();
+    @ViewComponent
+    private LineConfigFragment lineConfig;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -258,14 +275,18 @@ public class ChartConfigView extends StandardView {
             notifications.create("Nhập tên biểu đồ").show();
             return;
         }
-        ChartConfigFragment frag = getCurrentFragment();
-        if (frag == null || !frag.isValid()) return;
+
+        ChartConfigFragment fragment = getCurrentFragment();
+        if (!fragment.isValid()) {
+            notifications.create("Cấu hình không hợp lệ").show();
+            return;
+        }
 
         ChartConfig config = (editingConfig != null) ? editingConfig : dataManager.create(ChartConfig.class);
         config.setName(chartNameField.getValue());
         config.setDataset(dataset);
         config.setChartType(currentChartType);
-        config.setSettingsJson(frag.getConfigurationJson().toString());
+        config.setSettingsJson(fragment.getConfigurationJson().toString());
 
         dataManager.save(config);
         notifications.create("Đã lưu!").show();
