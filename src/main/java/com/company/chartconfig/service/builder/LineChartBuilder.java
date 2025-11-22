@@ -85,7 +85,7 @@ public class LineChartBuilder implements ChartBuilder {
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
 
         // 2.2 Aggregate
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, xAxisField, metrics);
+        List<MapDataItem> chartData = aggregator.aggregate(rawData, metrics, settings);
 
         // 2.3 [QUAN TRỌNG] SORT BY X-AXIS ASCENDING
         chartData.sort((o1, o2) -> {

@@ -82,7 +82,7 @@ public class PieChartBuilder implements ChartBuilder {
 
         // 2. Process Data
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, dimension, metrics);
+        List<MapDataItem> chartData = aggregator.aggregate(rawData, metrics, settings);
         dataProcessor.process(chartData, metrics, settings);
 
         // 3. Build UI Container

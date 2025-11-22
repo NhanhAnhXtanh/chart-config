@@ -142,16 +142,10 @@ public class BarChartBuilder implements ChartBuilder {
         }
 
         AxisLabel xAxisLabel = new AxisLabel();
+        xAxisLabel.setFontSize(10);
 
-        // --- GIẢI PHÁP: XOAY CHỮ & HIỆN FULL ---
-
-        // 1. Xoay chữ 30 độ (hoặc 45) để không bị chồng chéo
-        xAxisLabel.setRotate(30);
-
-        // 2. Tự động tính toán khoảng cách để không bị mất chữ
         xAxisLabel.setInterval(0); // 0 nghĩa là hiện tất cả, không ẩn nhãn nào
 
-        // 3. Formatter: Trả về giá trị nguyên bản (KHÔNG CẮT CÚT NỮA)
         xAxisLabel.setFormatterFunction(
                 "function(value) { " +
                         "   return value;" + // <--- Trả về chính xác 100% giá trị

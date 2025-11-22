@@ -1,27 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
+
+    <!-- 1. KHAI BÁO CONTAINER ẢO -->
     <data>
+        <keyValueInstance id="barSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+            <properties>
+                <!-- Các trường nguyên thủy -->
+                <property name="xAxis" datatype="string"/>
+                <property name="forceCategorical" datatype="boolean"/>
+
+                <property name="xAxisSortBy" datatype="string"/>
+                <property name="xAxisSortAsc" datatype="boolean"/>
+
+                <property name="querySortDesc" datatype="boolean"/>
+                <property name="seriesLimit" datatype="int"/>
+
+            </properties>
+        </keyValueInstance>
     </data>
+
     <content>
-        <!-- Root VBox -->
-        <vbox id="root" width="100%" spacing="false" padding="false" >
+        <vbox id="root" width="100%" spacing="false" padding="false">
 
-                <vbox spacing="false" padding="false">
-                    <hbox spacing="false" padding="false">
-                        <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
-                        <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
-                            <tooltip text="Dimension to use on x-axis." position="TOP"/>
-                        </button>
-                    </hbox>
-                    <div id="xDrop" classNames="chart-drop-zone"/>
-                </vbox>
+            <!-- X-AXIS (DropZone - Xử lý tay) -->
+            <vbox spacing="false" padding="false">
+                <hbox spacing="false" padding="false">
+                    <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
+                        <tooltip text="Dimension to use on x-axis." position="TOP"/>
+                    </button>
+                </hbox>
+                <div id="xDrop" classNames="chart-drop-zone"/>
+            </vbox>
 
-
+            <!-- FORCE CATEGORICAL (Bind Container) -->
             <hbox spacing="false" padding="false">
-                <checkbox id="forceCategoricalField" label="Force categorical" visible="false" css="margin-top: 4px;"/>
+                <checkbox id="forceCategoricalField"
+                          label="Force categorical"
+                          visible="false"
+                          css="margin-top: 4px;"
+                          dataContainer="barSettingsDc"
+                          property="forceCategorical"/>
             </hbox>
 
-            <!-- X-AXIS SORT BY (Ẩn/Hiện tùy thuộc vào Force Categorical) -->
+            <!-- X-AXIS SORT BY (Bind Container) -->
             <vbox id="xAxisSortBox" width="100%" spacing="false" padding="false" css="gap: 4px; margin-top: 5px; margin-bottom: 10px;" visible="false">
                 <hbox spacing="false" padding="false">
                     <span text="X-Axis Sort By" css="font-weight: 600; font-size: 14px; color: #555;"/>
@@ -29,16 +51,26 @@
                         <tooltip text="Decides which measure to sort the base axis by." position="TOP"/>
                     </button>
                 </hbox>
-                <comboBox id="xAxisSortByField" width="100%" placeholder="Category name..."/>
+
+                <comboBox id="xAxisSortByField"
+                          width="100%"
+                          placeholder="Category name..."
+                          dataContainer="barSettingsDc"
+                          property="xAxisSortBy"/>
+
                 <hbox spacing="false" padding="false">
-                    <checkbox id="xAxisSortAscField" label="X-Axis Sort Ascending"/>
+                    <checkbox id="xAxisSortAscField"
+                              label="X-Axis Sort Ascending"
+                              dataContainer="barSettingsDc"
+                              property="xAxisSortAsc"/>
+
                     <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
                         <tooltip text="Whether to sort ascending or descending on the base Axis." position="TOP"/>
                     </button>
                 </hbox>
             </vbox>
 
-
+            <!-- TIME GRAIN (Bind Container) -->
             <vbox id="timeGrainBox" width="100%" spacing="false" css="gap: 4px;" visible="false">
                 <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
                     <span text="Time Grain" css="font-weight: 600; font-size: 14px;"/>
@@ -46,59 +78,64 @@
                         <tooltip text="Group data by time interval" position="TOP"/>
                     </button>
                 </hbox>
-                <comboBox id="timeGrainField" width="100%" itemsEnum="com.company.chartconfig.enums.TimeGrain"/>
+                <comboBox id="timeGrainField"
+                          width="100%"
+                          itemsEnum="com.company.chartconfig.enums.TimeGrain"/>
             </vbox>
-                <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
-                <div id="metricsDrop" classNames="chart-drop-zone"/>
 
-                <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
-                <div id="dimensionsDrop" classNames="chart-drop-zone">
-                </div>
+            <!-- METRICS & DIMENSIONS (DropZone - Xử lý tay) -->
+            <span text="Metrics" css="font-weight: 600; font-size: 14px;"/>
+            <div id="metricsDrop" classNames="chart-drop-zone"/>
 
-                <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
-                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            <span text="Dimensions" css="font-weight: 600; font-size: 14px;"/>
+            <div id="dimensionsDrop" classNames="chart-drop-zone"/>
 
+            <span text="Filters" css="font-weight: 600; font-size: 14px;"/>
+            <div id="filtersDrop" classNames="chart-drop-zone"/>
 
+            <!-- CONTRIBUTION MODE (Bind Container) -->
             <vbox width="100%" spacing="false" padding="false" css="gap: 6px;">
-                <!-- Tiêu đề và Icon nằm trong HBox -->
-                <hbox css="align-items: center; gap: 6px;">
+                <hbox  spacing="false" padding="false" css="align-items: center; gap: 6px;">
                     <span text="Contribution Mode" css="font-weight: 600; font-size: 14px; color: #333;"/>
-                    <button icon="INFO_CIRCLE_O"
-                            themeNames="icon tertiary inline"
-                            css="color: #999; width: 16px; height: 16px; padding: 0; min-width: 0; min-height: 0;">
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
                         <tooltip text="Calculate contribution per series or row" position="END_TOP"/>
                     </button>
                 </hbox>
-
-                <comboBox id="contributionModeField" width="100%"
+                <comboBox id="contributionModeField"
+                          width="100%"
                           itemsEnum="com.company.chartconfig.enums.ContributionMode"/>
             </vbox>
 
-            <!-- SORT SECTION -->
+            <!-- QUERY SORT (Bind Container) -->
             <vbox width="100%" spacing="false" padding="false" css="gap: 4px; margin-top: 10px;">
-                <hbox css="align-items: center; gap: 6px;">
+                <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
                     <span text="Sort query by" css="font-weight: 600; font-size: 14px; color: #555;"/>
-                    <button icon="INFO_CIRCLE_O"
-                            themeNames="icon tertiary inline"
-                            css="color: #999; width: 16px; height: 16px; padding: 0; min-width: 0; min-height: 0;">
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
                         <tooltip text="Orders the query result..." position="END_TOP"/>
                     </button>
                 </hbox>
                 <div id="querySortDrop" classNames="chart-drop-zone"/>
-                <checkbox id="querySortDescField" label="Sort Descending" visible="false"/>
+
+                <checkbox id="querySortDescField"
+                          label="Sort Descending"
+                          visible="false"
+                          dataContainer="barSettingsDc"
+                          property="querySortDesc"/>
             </vbox>
 
+            <!-- SERIES LIMIT (Bind Container) -->
             <vbox width="100%" spacing="false" padding="false" css="gap: 4px;">
-                <hbox css="align-items: center; gap: 6px;">
+                <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
                     <span text="Series Limit" css="font-weight: 600; font-size: 14px; color: #555;"/>
-                    <button icon="INFO_CIRCLE_O"
-                            themeNames="icon tertiary inline"
-                            css="color: #999; width: 16px; height: 16px; padding: 0; min-width: 0; min-height: 0;">
-                        <tooltip text="Limits the number of the rows that are computed in the query that is the source of the data used for this chart."
-                                 position="END_TOP"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
+                        <tooltip text="Limits the number of the rows..." position="END_TOP"/>
                     </button>
                 </hbox>
-                <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"/>
+                <comboBox id="seriesLimitField"
+                          width="100%"
+                          allowCustomValue="true"
+                          dataContainer="barSettingsDc"
+                          property="seriesLimit"/>
             </vbox>
 
         </vbox>

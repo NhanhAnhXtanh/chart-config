@@ -88,14 +88,17 @@ public class ChartConfigView extends StandardView {
 
     private final Map<ChartType, ChartConfigFragment> fragmentCache = new HashMap<>();
     private final Map<Tab, ChartType> tabMap = new HashMap<>();
-    @ViewComponent
-    private LineConfigFragment lineConfig;
 
     @Subscribe
     public void onInit(final InitEvent event) {
         setupDynamicTabs();
         searchField.setValueChangeMode(ValueChangeMode.EAGER);
         searchField.addValueChangeListener(e -> doSearch());
+    }
+    @Subscribe
+    public void onBeforeClose(final BeforeCloseEvent event) {
+        fragmentContainer.removeAll(); // Gỡ khỏi UI
+        fragmentCache.clear();         // Xóa tham chiếu
     }
 
     private void setupDynamicTabs() {
@@ -128,12 +131,19 @@ public class ChartConfigView extends StandardView {
         this.currentChartType = newType;
         ChartConfigFragment newFrag = getOrCreateFragment(newType);
 
+        // --- FIX NULL POINTER EXCEPTION ---
+        if (newFrag == null) {
+            // Nếu chưa có fragment cho loại này (ví dụ chưa code AreaChart), dừng lại để tránh lỗi
+            fragmentContainer.removeAll();
+            return;
+        }
+        // ----------------------------------
+
         fragmentContainer.removeAll();
         if (newFrag instanceof Component comp) {
             fragmentContainer.add(comp);
         }
 
-        // (FIX QUAN TRỌNG) Truyền cả danh sách tên và Map Type
         newFrag.setAvailableFields(allColumnNames);
         newFrag.setColumnTypes(allColumnTypes);
 
@@ -219,7 +229,7 @@ public class ChartConfigView extends StandardView {
 
         fieldsList.setItems(allFieldItems);
         fieldsList.setRenderer(new ComponentRenderer<>(item -> {
-            NativeLabel lbl = new NativeLabel(getIconForType(item.getType()) + " " + item.getName());
+            NativeLabel lbl = new NativeLabel(getIconForType(item.type()) + " " + item.name());
             lbl.getStyle()
                     .setDisplay(Style.Display.FLEX).setWidth("100%")
                     .setPadding("6px 12px").setBoxSizing(Style.BoxSizing.BORDER_BOX)
@@ -227,8 +237,8 @@ public class ChartConfigView extends StandardView {
                     .setBorder("1px solid #e0e0e0").setBorderRadius("6px")
                     .setBackgroundColor("white").setFontSize("13px").setFontWeight("500");
 
-            lbl.getElement().setAttribute("data-field-name", item.getName());
-            DragSource.create(lbl).setDragData(item.getName());
+            lbl.getElement().setAttribute("data-field-name", item.name());
+            DragSource.create(lbl).setDragData(item.name());
             return lbl;
         }));
 
@@ -248,7 +258,7 @@ public class ChartConfigView extends StandardView {
     private void doSearch() {
         String keyword = searchField.getValue() != null ? searchField.getValue().toLowerCase().trim() : "";
         fieldsList.setItems(keyword.isEmpty() ? allFieldItems :
-                allFieldItems.stream().filter(i -> i.getName().toLowerCase().contains(keyword)).collect(Collectors.toList()));
+                allFieldItems.stream().filter(i -> i.name().toLowerCase().contains(keyword)).collect(Collectors.toList()));
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")

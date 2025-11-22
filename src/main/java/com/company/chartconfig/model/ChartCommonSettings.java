@@ -8,84 +8,70 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ChartCommonSettings {
-    private int seriesLimit;
-    private ContributionMode contributionMode;
-    private boolean isDonut;
+    // 1. Cấu hình chung
     private String xAxisField;
-    private String dimensionField;
-    private TimeGrain timeGrain;
+    private String dimensionField; // Cho Pie
 
-    // --- 1. QUERY SORT ---
+    // --- TÁCH BIỆT 2 LIMIT ---
+    private int seriesLimit; // Giới hạn số lượng Series (Top N groups)
+    private int rowLimit;    // Giới hạn số dòng dữ liệu (Last N rows)
+    // -------------------------
+
+    private ContributionMode contributionMode;
+    private TimeGrain timeGrain;
+    private boolean isDonut;
+
+    // 2. Query Sort
     private MetricConfig querySortMetric;
     private boolean querySortDesc = true;
 
-    // --- 2. X-AXIS CONFIG & SORT ---
-    private boolean forceCategorical = false; // MỚI: Ép buộc dạng danh mục
+    // 3. Visual Sort
+    private boolean forceCategorical = false;
     private String xAxisSortBy;
     private boolean xAxisSortAsc = true;
 
     public ChartCommonSettings(JsonNode root) {
-        this.seriesLimit = root.path(ChartConstants.JSON_FIELD_SERIES_LIMIT).asInt(ChartConstants.DEFAULT_LIMIT_VALUE);
+        // X-Axis / Dimension
+        if (root.has("xAxis") && !root.path("xAxis").isNull()) {
+            this.xAxisField = root.path("xAxis").asText();
+        } else if (root.has("dimension")) {
+            this.xAxisField = root.path("dimension").asText();
+        }
+        this.dimensionField = this.xAxisField; // Alias
+
+        // --- ĐỌC RIÊNG BIỆT ---
+        this.seriesLimit = root.path("seriesLimit").asInt(0);
+        this.rowLimit = root.path("rowLimit").asInt(0);
+        // ----------------------
 
         String modeStr = root.path("contributionMode").asText("none");
         this.contributionMode = ContributionMode.fromId(modeStr);
-
+        this.timeGrain = TimeGrain.fromId(root.path("timeGrain").asText(null));
         this.isDonut = root.path("isDonut").asBoolean(false);
 
-        // Logic đọc: Tách biệt key trong JSON
-        if (root.has("xAxis")) {
-            this.xAxisField = root.path("xAxis").asText();
-        }
-        this.timeGrain = TimeGrain.fromId(root.path("timeGrain").asText(null));
-
-        // Query Sort
+        // Sort
         this.querySortDesc = root.path("querySortDesc").asBoolean(true);
         if (root.has("querySortBy")) {
             try { this.querySortMetric = new ObjectMapper().treeToValue(root.path("querySortBy"), MetricConfig.class); } catch (Exception e) { this.querySortMetric = null; }
         }
-        // QUAN TRỌNG: Đọc đúng key "dimension"
-        if (root.has("dimension")) {
-            this.dimensionField = root.path("dimension").asText();
-        }
-
-        // Fallback (Hỗ trợ tương thích ngược nếu cần, hoặc bỏ nếu muốn strict)
-        if (this.dimensionField == null && this.xAxisField != null) {
-            this.dimensionField = this.xAxisField;
-        }
-        // X-Axis Config
-        this.forceCategorical = root.path("forceCategorical").asBoolean(false); // Default false
+        this.forceCategorical = root.path("forceCategorical").asBoolean(false);
         this.xAxisSortBy = root.path("xAxisSortBy").asText(null);
         this.xAxisSortAsc = root.path("xAxisSortAsc").asBoolean(true);
     }
 
     // Getters
-    public TimeGrain getTimeGrain() { return timeGrain; }
+    public String getXAxisField() { return xAxisField; }
+    public String getDimensionField() { return dimensionField; }
 
+    public int getSeriesLimit() { return seriesLimit; }
+    public int getRowLimit() { return rowLimit; }
+
+    public ContributionMode getContributionMode() { return contributionMode; }
+    public TimeGrain getTimeGrain() { return timeGrain; }
+    public boolean isDonut() { return isDonut; }
     public MetricConfig getQuerySortMetric() { return querySortMetric; }
     public boolean isQuerySortDesc() { return querySortDesc; }
-
-    public boolean isForceCategorical() { return forceCategorical; } // Getter Mới
+    public boolean isForceCategorical() { return forceCategorical; }
     public String getXAxisSortBy() { return xAxisSortBy; }
     public boolean isXAxisSortAsc() { return xAxisSortAsc; }
-
-
-    public int getSeriesLimit() {
-        return seriesLimit;
-    }
-
-    public ContributionMode getContributionMode() {
-        return contributionMode;
-    }
-
-    public boolean isDonut() {
-        return isDonut;
-    }
-
-    public String getXAxisField() {
-        return xAxisField;
-    }
-
-    public String getDimensionField() {
-        return dimensionField;
-    }
 }

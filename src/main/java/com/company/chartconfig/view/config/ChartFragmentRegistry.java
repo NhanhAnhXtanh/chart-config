@@ -2,6 +2,7 @@ package com.company.chartconfig.view.config;
 
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.view.chartfragment.BarConfigFragment;
+import com.company.chartconfig.view.chartfragment.LineConfigFragment;
 import com.company.chartconfig.view.chartfragment.PieConfigFragment;
 import com.company.chartconfig.view.config.common.ChartConfigFragment;
 import io.jmix.flowui.fragment.Fragment;
@@ -19,6 +20,7 @@ public class ChartFragmentRegistry {
         // Đăng ký các Fragment tại đây
         register(ChartType.BAR, BarConfigFragment.class);
         register(ChartType.PIE, PieConfigFragment.class);
+        register(ChartType.LINE, LineConfigFragment.class);
         // register(ChartType.LINE, LineConfigFragment.class);
     }
 

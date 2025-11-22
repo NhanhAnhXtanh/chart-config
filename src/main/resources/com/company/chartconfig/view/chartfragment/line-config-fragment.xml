@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <keyValueInstance id="lineSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+            <properties>
+                <property name="xAxis" datatype="string"/>
+                <!-- KHAI BÁO CẢ 2 -->
+                <property name="seriesLimit" datatype="int"/>
+                <property name="rowLimit" datatype="int"/>
+            </properties>
+        </keyValueInstance>
+    </data>
+
     <content>
         <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
-
-            <!-- 1. X-AXIS -->
+            <!-- X-AXIS -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
-                <hbox css="align-items: center; gap: 4px;">
-                    <span text="X-axis" css="font-weight: 600; font-size: 13px; color: #333;"/>
-                    <icon icon="INFO_CIRCLE_O" css="width: 12px; height: 12px; color: #999;"/>
-                </hbox>
+                <span text="X-axis" css="font-weight: 600; font-size: 13px; color: #333;"/>
                 <div id="xDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 2. METRICS -->
+            <!-- METRICS... (Giữ nguyên) -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
-                <hbox css="align-items: center; gap: 4px;">
-                    <span text="Metrics" css="font-weight: 600; font-size: 13px; color: #333;"/>
-                    <icon icon="INFO_CIRCLE_O" css="width: 12px; height: 12px; color: #999;"/>
-                </hbox>
+                <span text="Metrics" css="font-weight: 600; font-size: 13px; color: #333;"/>
                 <div id="metricsDrop" classNames="chart-drop-zone"/>
             </vbox>
-
-            <!-- 3. DIMENSIONS -->
+            <!-- ... -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
                 <hbox css="align-items: center; gap: 4px;">
                     <span text="Dimensions" css="font-weight: 600; font-size: 13px; color: #333;"/>
@@ -36,19 +39,27 @@
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 5. LIMITS -->
+            <!-- LIMITS (HIỆN CẢ 2) -->
             <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
 
                 <!-- Series Limit -->
                 <vbox spacing="false" padding="false" css="gap: 4px;">
                     <span text="Series Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                    <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"/>
+                    <comboBox id="seriesLimitField"
+                              width="100%"
+                              allowCustomValue="true"
+                              dataContainer="lineSettingsDc"
+                              property="seriesLimit"/>
                 </vbox>
 
                 <!-- Row Limit -->
                 <vbox spacing="false" padding="false" css="gap: 4px;">
                     <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                    <comboBox id="rowLimitField" width="100%" allowCustomValue="true"/>
+                    <comboBox id="rowLimitField"
+                              width="100%"
+                              allowCustomValue="true"
+                              dataContainer="lineSettingsDc"
+                              property="rowLimit"/>
                 </vbox>
             </vbox>
         </vbox>

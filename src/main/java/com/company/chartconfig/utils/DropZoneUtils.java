@@ -155,7 +155,7 @@ public class DropZoneUtils {
         zone.removeAll();
         if (filters.isEmpty()) renderEmptyState(zone, "Kéo thả Filter");
         else { zone.addClassName("filled"); filters.forEach(f -> {
-            String label = f.getColumn() + " " + f.getOperator() + " " + f.getValue();
+            String label = f.column() + " " + f.operator() + " " + f.value();
             zone.add(createChip(label, ()->{filters.remove(f); updateFilters(zone,filters);}, null));
         }); }
     }

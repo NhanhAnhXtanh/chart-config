@@ -16,10 +16,11 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import io.jmix.flowui.component.checkbox.JmixCheckbox;
+import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.fragment.Fragment;
 import io.jmix.flowui.fragment.FragmentDescriptor;
+import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.Subscribe;
 import io.jmix.flowui.view.ViewComponent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,67 +35,74 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
 
     @Autowired private ObjectMapper objectMapper;
 
-    @ViewComponent private Div xDrop;
-    @ViewComponent private Checkbox forceCategoricalField; // MỚI: Checkbox Force Category
+    // --- CONTAINER ---
+    @ViewComponent private InstanceContainer<KeyValueEntity> barSettingsDc;
 
+    // --- DROP ZONES ---
+    @ViewComponent private Div xDrop;
     @ViewComponent private Div metricsDrop;
     @ViewComponent private Div dimensionsDrop;
     @ViewComponent private Div filtersDrop;
+    @ViewComponent private Div querySortDrop;
 
-    // --- 1. X-AXIS SORT UI ---
+    // --- UI COMPONENTS (Để set visible/items) ---
+    @ViewComponent private Checkbox forceCategoricalField;
     @ViewComponent private VerticalLayout xAxisSortBox;
     @ViewComponent private ComboBox<String> xAxisSortByField;
-    @ViewComponent private Checkbox xAxisSortAscField;
-
-    // --- 2. QUERY SORT UI ---
-
-    private MetricConfig querySortMetric = null;
-
-    @ViewComponent private JmixComboBox<ContributionMode> contributionModeField;
-    @ViewComponent private ComboBox<Integer> seriesLimitField;
+    @ViewComponent private Checkbox querySortDescField;
     @ViewComponent private VerticalLayout timeGrainBox;
-    @ViewComponent private JmixComboBox<TimeGrain> timeGrainField;
+    @ViewComponent private ComboBox<Integer> seriesLimitField;
 
-    private String xAxis;
+    // State
+    private String xAxis; // Vẫn cần biến local để DropZone dùng
     private final List<MetricConfig> metrics = new ArrayList<>();
     private final List<String> dimensions = new ArrayList<>();
     private final List<FilterRule> filters = new ArrayList<>();
+    private MetricConfig querySortMetric = null;
     private Map<String, String> fieldsTypeMap = new HashMap<>();
     @ViewComponent
-    private Div querySortDrop;
+    private JmixComboBox<TimeGrain> timeGrainField;
     @ViewComponent
-    private JmixCheckbox querySortDescField;
+    private JmixComboBox<ContributionMode> contributionModeField;
 
     @Subscribe
     public void onReady(ReadyEvent event) {
         ChartUiUtils.setupSeriesLimitField(seriesLimitField);
-        if (contributionModeField.getValue() == null) contributionModeField.setValue(ContributionMode.NONE);
-        if (xAxisSortAscField.getValue() == null) xAxisSortAscField.setValue(true);
-        if (querySortDescField.getValue() == null) querySortDescField.setValue(true);
-        if (forceCategoricalField.getValue() == null) forceCategoricalField.setValue(false);
+         contributionModeField.setValue(ContributionMode.NONE);
+        timeGrainField.setValue(TimeGrain.DAY);
+        // 1. Init Container Data (Default Values)
+        KeyValueEntity entity = new KeyValueEntity();
+        entity.setValue("xAxisSortAsc", true);
+        entity.setValue("querySortDesc", true);
+        entity.setValue("forceCategorical", false);
+        entity.setValue("seriesLimit", ChartConstants.DEFAULT_LIMIT_VALUE);
 
-        // Thêm listener cho Force Categorical
-        forceCategoricalField.addValueChangeListener(e -> checkSortVisibility());
+        // Set Enum Object (Không set String ID)
+        entity.setValue("contributionMode", ContributionMode.NONE);
+        entity.setValue("timeGrain", TimeGrain.DAY);
+        barSettingsDc.setItem(entity);
 
+        // 2. Listener Container (Xử lý logic hiển thị phụ thuộc)
+        barSettingsDc.addItemPropertyChangeListener(e -> {
+            if ("forceCategorical".equals(e.getProperty())) checkSortVisibility();
+        });
+
+        // 3. Setup DropZones
         DropZoneUtils.setup(xDrop, v -> {
             this.xAxis = v;
+            // Sync vào container
+            barSettingsDc.getItem().setValue("xAxis", v);
+
             checkTimeGrainVisibility();
             refreshXAxisSortOptions();
-            checkSortVisibility(); // Check lại hiển thị khi drop
+            checkSortVisibility();
         });
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
         DropZoneUtils.setupFilter(filtersDrop, filters);
-
         DropZoneUtils.setupSingleMetricZone(querySortDrop, querySortMetric, new ArrayList<>(fieldsTypeMap.keySet()),
-                (cfg) -> {
-                    this.querySortMetric = cfg;
-                    refreshUI();
-                },
-                () -> {
-                    this.querySortMetric = null;
-                    refreshUI();
-                }
+                (cfg) -> { this.querySortMetric = cfg; refreshUI(); },
+                () -> { this.querySortMetric = null; refreshUI(); }
         );
 
         refreshUI();
@@ -104,6 +112,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         if (xDrop != null) {
             DropZoneUtils.updateVisuals(xDrop, xAxis, v -> {
                 this.xAxis = v;
+                barSettingsDc.getItem().setValue("xAxis", v);
                 checkTimeGrainVisibility();
                 refreshXAxisSortOptions();
                 checkSortVisibility();
@@ -111,7 +120,6 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshXAxisSortOptions);
             DropZoneUtils.updateMulti(dimensionsDrop, dimensions);
             DropZoneUtils.updateFilters(filtersDrop, filters);
-
             DropZoneUtils.updateSingleMetricVisuals(querySortDrop, querySortMetric, new ArrayList<>(fieldsTypeMap.keySet()),
                     (cfg) -> { this.querySortMetric = cfg; refreshUI(); },
                     () -> { this.querySortMetric = null; refreshUI(); }
@@ -119,32 +127,27 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
 
             refreshXAxisSortOptions();
             checkSortVisibility();
+
+            if (querySortDescField != null) querySortDescField.setVisible(querySortMetric != null);
         }
     }
 
-    /**
-     * LOGIC HIỂN THỊ QUAN TRỌNG
-     */
+    // --- LOGIC UI ---
     private void checkSortVisibility() {
         if (xAxis == null || xAxis.isEmpty()) {
             forceCategoricalField.setVisible(false);
             xAxisSortBox.setVisible(false);
             return;
         }
-
         String type = fieldsTypeMap.getOrDefault(xAxis, "string").toLowerCase();
-        boolean isNumber = type.contains("number") || type.contains("int") || type.contains("double") || type.contains("float") || type.contains("decimal");
+        boolean isNumber = type.contains("number") || type.contains("int") || type.contains("double");
 
-        // 1. Logic cho Checkbox Force Categorical
         forceCategoricalField.setVisible(isNumber);
 
-        // 2. Logic cho Sort Box
         if (isNumber) {
-            // Nếu là số, chỉ hiện Sort Box khi "Force Categorical" được tick
-            boolean forced = Boolean.TRUE.equals(forceCategoricalField.getValue());
-            xAxisSortBox.setVisible(forced);
+            Boolean forced = barSettingsDc.getItem().getValue("forceCategorical");
+            xAxisSortBox.setVisible(Boolean.TRUE.equals(forced));
         } else {
-            // Nếu là String/Date, luôn hiện Sort Box (vì nó luôn là Category)
             xAxisSortBox.setVisible(true);
         }
     }
@@ -154,29 +157,36 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         List<String> options = new ArrayList<>();
         if (xAxis != null && !xAxis.isEmpty()) options.add(xAxis);
         for (MetricConfig m : metrics) options.add(m.getLabel());
-
         xAxisSortByField.setItems(options);
         String cur = xAxisSortByField.getValue();
         if (cur != null && !options.contains(cur)) xAxisSortByField.setValue(null);
     }
 
+    // --- LOAD/SAVE JSON ---
+
     @Override
     public ObjectNode getConfigurationJson() {
         ObjectNode node = objectMapper.createObjectNode();
-        node.put("xAxis", xAxis);
-        if (contributionModeField.getValue() != null) node.put("contributionMode", contributionModeField.getValue().getId());
-        Integer limit = seriesLimitField.getValue();
-        node.put(ChartConstants.JSON_FIELD_SERIES_LIMIT, limit != null ? limit : ChartConstants.LIMIT_NONE);
-        if (timeGrainBox.isVisible() && timeGrainField.getValue() != null) node.put("timeGrain", timeGrainField.getValue().getId());
+        KeyValueEntity entity = barSettingsDc.getItem();
 
-        // Query Sort
+        // 1. Lấy từ Container (Primitive types)
+        node.put("xAxis", (String) entity.getValue("xAxis"));
+        node.put("forceCategorical", (Boolean) entity.getValue("forceCategorical"));
+        node.put("xAxisSortBy", (String) entity.getValue("xAxisSortBy"));
+        node.put("xAxisSortAsc", (Boolean) entity.getValue("xAxisSortAsc"));
+        node.put("querySortDesc", (Boolean) entity.getValue("querySortDesc"));
+        // Map seriesLimit UI -> rowLimit JSON
+        node.put("rowLimit", (Integer) entity.getValue("seriesLimit"));
+
+        // 2. Lấy từ Container (Enum -> ID String)
+        TimeGrain grain = timeGrainField.getValue();
+        if (grain != null) node.put("timeGrain", grain.getId());
+
+        ContributionMode mode = contributionModeField.getValue();
+        if (mode != null) node.put("contributionMode", mode.getId());
+
+        // 3. Lấy từ Local State (Collections & Object)
         if (querySortMetric != null) node.set("querySortBy", objectMapper.valueToTree(querySortMetric));
-        node.put("querySortDesc", Boolean.TRUE.equals(querySortDescField.getValue()));
-
-        // X-Axis Config
-        node.put("forceCategorical", Boolean.TRUE.equals(forceCategoricalField.getValue()));
-        node.put("xAxisSortBy", xAxisSortByField.getValue());
-        node.put("xAxisSortAsc", Boolean.TRUE.equals(xAxisSortAscField.getValue()));
 
         ArrayNode m = node.putArray("metrics"); metrics.forEach(m::addPOJO);
         ArrayNode d = node.putArray("dimensions"); dimensions.forEach(d::add);
@@ -187,10 +197,31 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
     @Override
     public void setConfigurationJson(JsonNode node) {
         if (node == null) return;
+        KeyValueEntity entity = barSettingsDc.getItem();
+
+        // 1. Set vào Container (Primitive types)
         this.xAxis = node.path("xAxis").asText(null);
-        contributionModeField.setValue(ContributionMode.fromId(node.path("contributionMode").asText("none")));
-        seriesLimitField.setValue(node.path(ChartConstants.JSON_FIELD_SERIES_LIMIT).asInt(0));
-        timeGrainField.setValue(TimeGrain.fromId(node.path("timeGrain").asText(null)));
+        entity.setValue("xAxis", this.xAxis);
+
+        entity.setValue("forceCategorical", node.path("forceCategorical").asBoolean(false));
+        entity.setValue("xAxisSortBy", node.path("xAxisSortBy").asText(null));
+        entity.setValue("xAxisSortAsc", node.path("xAxisSortAsc").asBoolean(true));
+        entity.setValue("querySortDesc", node.path("querySortDesc").asBoolean(true));
+
+        // Map JSON rowLimit -> UI seriesLimit
+        entity.setValue("seriesLimit", node.path("rowLimit").asInt(0));
+
+        // 2. Set vào Container (ID String -> Enum Object)
+        String grainId = node.path("timeGrain").asText(null);
+        entity.setValue("timeGrain", TimeGrain.fromId(grainId));
+
+        String modeId = node.path("contributionMode").asText(null);
+        entity.setValue("contributionMode", ContributionMode.fromId(modeId));
+
+        // 3. Set vào Local State
+        if (node.has("querySortBy")) {
+            try { this.querySortMetric = objectMapper.treeToValue(node.path("querySortBy"), MetricConfig.class); } catch (Exception e) { this.querySortMetric = null; }
+        } else this.querySortMetric = null;
 
         metrics.clear();
         if (node.path("metrics").isArray()) node.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
@@ -200,23 +231,11 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         if (node.path("filters").isArray()) node.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
 
         if (xDrop != null) refreshUI();
-
-        // Query Sort
-        if (node.has("querySortBy")) {
-            try { this.querySortMetric = objectMapper.treeToValue(node.path("querySortBy"), MetricConfig.class); } catch (Exception e) { this.querySortMetric = null; }
-        } else this.querySortMetric = null;
-        querySortDescField.setValue(node.path("querySortDesc").asBoolean(true));
-
-        // X-Axis Config
-        forceCategoricalField.setValue(node.path("forceCategorical").asBoolean(false));
-        xAxisSortByField.setValue(node.path("xAxisSortBy").asText(null));
-        xAxisSortAscField.setValue(node.path("xAxisSortAsc").asBoolean(true));
-
         checkTimeGrainVisibility();
-        checkSortVisibility(); // Check lại lần cuối
+        checkSortVisibility();
     }
 
-    // ... Boilerplate overrides ...
+    // ... Boilerplate interface methods ...
     @Override public void setAvailableFields(List<String> fields) {
         if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string"));
         if (metricsDrop != null) DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
@@ -224,9 +243,10 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
     @Override public void setColumnTypes(Map<String, String> types) { this.fieldsTypeMap = types != null ? types : new HashMap<>(); checkTimeGrainVisibility(); checkSortVisibility(); }
     @Override public boolean isValid() { return xAxis != null && !metrics.isEmpty(); }
     @Override public String getMainDimension() { return xAxis; }
-    @Override public void setMainDimension(String f) { xAxis = f; if(xDrop!=null) refreshUI(); checkTimeGrainVisibility(); checkSortVisibility();}
+    @Override public void setMainDimension(String f) { xAxis = f; barSettingsDc.getItem().setValue("xAxis", f); if(xDrop!=null) refreshUI(); checkTimeGrainVisibility(); checkSortVisibility();}
     @Override public String getMainMetric() { return metrics.isEmpty() ? null : metrics.get(0).getColumn(); }
     @Override public void setMainMetric(String f) { metrics.clear(); if(f!=null) metrics.add(new MetricConfig(f)); if(metricsDrop!=null) refreshUI(); }
+
     private void checkTimeGrainVisibility() {
         boolean isDate = false;
         if (xAxis != null && fieldsTypeMap.containsKey(xAxis)) {
