@@ -39,4 +39,33 @@ public class ChartUiUtils {
             field.setValue(ChartConstants.DEFAULT_LIMIT_VALUE);
         }
     }
+
+    public static void setupRowsLimitField(ComboBox<Integer> field) {
+        field.setItems(ChartConstants.DEFAULT_LIMIT_OPTIONS);
+
+            // 2. Xử lý hiển thị (Dùng equals để an toàn với Integer object)
+        field.setItemLabelGenerator(item -> {
+            if (item != null && item.equals(ChartConstants.LIMIT_NONE)) {
+                return "None (All)";
+                }
+            return String.valueOf(item);
+        });
+
+            // 3. Cho phép nhập số tay
+            field.setAllowCustomValue(true);
+            field.addCustomValueSetListener(e -> {
+                try {
+                    int val = Integer.parseInt(e.getDetail());
+                    if (val < 0) val = 0;
+                    field.setValue(val);
+                } catch (NumberFormatException ex) {
+                    // Reset về giá trị cũ nếu nhập sai
+                    field.setValue(field.getValue());
+                }
+            });
+            // 4. Mặc định
+            if (field.getValue() == null) {
+                field.setValue(ChartConstants.DEFAULT_LIMIT_VALUE);
+        }
+    }
 }

@@ -2,7 +2,7 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <!-- DATA CONTAINER ẢO -->
     <data>
-        <keyValueInstance id="pieSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+        <keyValueInstance id="pieSettingsDc">
             <properties>
                 <property name="dimension" datatype="string"/>
                 <property name="isDonut" datatype="boolean"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <data>
-        <keyValueInstance id="lineSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+        <keyValueInstance id="lineSettingsDc">
             <properties>
                 <property name="xAxis" datatype="string"/>
                 <!-- KHAI BÁO CẢ 2 LIMIT -->

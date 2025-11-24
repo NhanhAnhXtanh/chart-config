@@ -1,5 +1,6 @@
 package com.company.chartconfig.view.chartfragment;
 
+import com.company.chartconfig.constants.ChartConstants;
 import com.company.chartconfig.utils.ChartUiUtils;
 import com.company.chartconfig.utils.DropZoneUtils;
 import com.company.chartconfig.utils.FilterRule;
@@ -50,12 +51,12 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
     public void onReady(ReadyEvent event) {
         // Setup cả 2
         ChartUiUtils.setupSeriesLimitField(seriesLimitField);
-        ChartUiUtils.setupSeriesLimitField(rowLimitField);
+        ChartUiUtils.setupRowsLimitField(rowLimitField);
 
         // Init Data
         KeyValueEntity entity = new KeyValueEntity();
-        entity.setValue("seriesLimit", 0);     // Mặc định 0
-        entity.setValue("rowLimit", 10000);    // Mặc định 10000
+        entity.setValue("seriesLimit", ChartConstants.DEFAULT_LIMIT_VALUE);     // Mặc định 0
+        entity.setValue("rowLimit",ChartConstants.DEFAULT_LIMIT_VALUE);    // Mặc định 10000
         lineSettingsDc.setItem(entity);
 
         DropZoneUtils.setup(xDrop, v -> {
@@ -108,8 +109,8 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
         entity.setValue("xAxis", this.xAxis);
 
         // Đọc cả 2
-        entity.setValue("seriesLimit", node.path("seriesLimit").asInt(0));
-        entity.setValue("rowLimit", node.path("rowLimit").asInt(10000));
+        entity.setValue("seriesLimit", node.path("seriesLimit").asInt(ChartConstants.DEFAULT_LIMIT_VALUE));
+        entity.setValue("rowLimit", node.path("rowLimit").asInt(ChartConstants.DEFAULT_LIMIT_VALUE));
 
         metrics.clear();
         if (node.path("metrics").isArray()) node.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });

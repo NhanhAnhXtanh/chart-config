@@ -51,8 +51,9 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
     @ViewComponent private ComboBox<String> xAxisSortByField;
     @ViewComponent private Checkbox querySortDescField;
     @ViewComponent private VerticalLayout timeGrainBox;
-    @ViewComponent private ComboBox<Integer> seriesLimitField;
-
+    @ViewComponent private JmixComboBox<Integer> seriesLimitField;
+    @ViewComponent
+    private JmixComboBox<Integer> rowsLimitField;
     // State
     private String xAxis; // Vẫn cần biến local để DropZone dùng
     private final List<MetricConfig> metrics = new ArrayList<>();
@@ -68,7 +69,8 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
     @Subscribe
     public void onReady(ReadyEvent event) {
         ChartUiUtils.setupSeriesLimitField(seriesLimitField);
-         contributionModeField.setValue(ContributionMode.NONE);
+        ChartUiUtils.setupRowsLimitField(rowsLimitField);
+        contributionModeField.setValue(ContributionMode.NONE);
         timeGrainField.setValue(TimeGrain.DAY);
         // 1. Init Container Data (Default Values)
         KeyValueEntity entity = new KeyValueEntity();
@@ -76,7 +78,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         entity.setValue("querySortDesc", true);
         entity.setValue("forceCategorical", false);
         entity.setValue("seriesLimit", ChartConstants.DEFAULT_LIMIT_VALUE);
-
+        entity.setValue("rowLimit", ChartConstants.DEFAULT_LIMIT_VALUE);
         // Set Enum Object (Không set String ID)
         entity.setValue("contributionMode", ContributionMode.NONE);
         entity.setValue("timeGrain", TimeGrain.DAY);
@@ -132,7 +134,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         }
     }
 
-    // --- LOGIC UI ---
+
     private void checkSortVisibility() {
         if (xAxis == null || xAxis.isEmpty()) {
             forceCategoricalField.setVisible(false);
@@ -162,7 +164,6 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         if (cur != null && !options.contains(cur)) xAxisSortByField.setValue(null);
     }
 
-    // --- LOAD/SAVE JSON ---
 
     @Override
     public ObjectNode getConfigurationJson() {
@@ -176,8 +177,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         node.put("xAxisSortAsc", (Boolean) entity.getValue("xAxisSortAsc"));
         node.put("querySortDesc", (Boolean) entity.getValue("querySortDesc"));
         node.put("seriesLimit", (Integer) entity.getValue("seriesLimit"));
-
-        // 2. Lấy từ Container (Enum -> ID String)
+        node.put("rowLimit", (Integer) entity.getValue("rowLimit"));        // 2. Lấy từ Container (Enum -> ID String)
         TimeGrain grain = timeGrainField.getValue();
         if (grain != null) node.put("timeGrain", grain.getId());
 
@@ -207,6 +207,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         entity.setValue("xAxisSortAsc", node.path("xAxisSortAsc").asBoolean(true));
         entity.setValue("querySortDesc", node.path("querySortDesc").asBoolean(true));
         entity.setValue("seriesLimit", node.path("seriesLimit").asInt(ChartConstants.DEFAULT_LIMIT_VALUE));
+        entity.setValue("rowLimit", node.path("rowLimit").asInt(ChartConstants.DEFAULT_LIMIT_VALUE));
 
         // 2. Set vào Container (ID String -> Enum Object)
         String grainId = node.path("timeGrain").asText(null);

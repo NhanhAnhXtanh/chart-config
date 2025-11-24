@@ -24,10 +24,8 @@ public class ChartDataProcessor {
             applyTailLimit(data, rowLimit);
         }
 
-        // 2. Series Limit (Cắt đầu - Top N)
         int seriesLimit = settings.getSeriesLimit();
         if (seriesLimit > ChartConstants.LIMIT_NONE) {
-            // Sort DESC để lấy Top N
             String sortKey = metrics.get(0).getLabel();
             data.sort((o1, o2) -> {
                 double v1 = getDouble(o1, sortKey);

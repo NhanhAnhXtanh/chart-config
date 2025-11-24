@@ -3,7 +3,7 @@
 
     <!-- 1. KHAI BÁO CONTAINER ẢO -->
     <data>
-        <keyValueInstance id="barSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+        <keyValueInstance id="barSettingsDc">
             <properties>
                 <!-- Các trường nguyên thủy -->
                 <property name="xAxis" datatype="string"/>
@@ -14,7 +14,7 @@
 
                 <property name="querySortDesc" datatype="boolean"/>
                 <property name="seriesLimit" datatype="int"/>
-
+                <property name="rowLimit" datatype="int"/>
             </properties>
         </keyValueInstance>
     </data>
@@ -128,7 +128,7 @@
                 <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
                     <span text="Series Limit" css="font-weight: 600; font-size: 14px; color: #555;"/>
                     <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
-                        <tooltip text="Limits the number of the rows..." position="END_TOP"/>
+                        <tooltip text="Limits the number of the metric..." position="END_TOP"/>
                     </button>
                 </hbox>
                 <comboBox id="seriesLimitField"
@@ -136,6 +136,21 @@
                           allowCustomValue="true"
                           dataContainer="barSettingsDc"
                           property="seriesLimit"/>
+            </vbox>
+
+
+            <vbox width="100%" spacing="false" padding="false" css="gap: 4px;">
+            <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
+                <span text="Rows Limit" css="font-weight: 600; font-size: 14px; color: #555;"/>
+                <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
+                    <tooltip text="Limits the number of the rows..." position="END_TOP"/>
+                </button>
+            </hbox>
+            <comboBox id="rowsLimitField"
+                      width="100%"
+                      allowCustomValue="true"
+                      dataContainer="barSettingsDc"
+                      property="rowLimit"/>
             </vbox>
 
         </vbox>
