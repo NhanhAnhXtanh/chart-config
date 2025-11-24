@@ -71,12 +71,55 @@ public class BarChartBuilder implements ChartBuilder {
         if (root.path("filters").isArray()) root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
 
         if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
+        List<FilterRule> whereRules = new ArrayList<>();   // Lọc thô (Dimension)
+        List<FilterRule> havingRules = new ArrayList<>();  // Lọc tổng (Metric)
 
-        // 1. Aggregate
-        List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
+        for (FilterRule rule : filters) {
+            // Kiểm tra xem cột trong filter có nằm trong danh sách Metric không
+            boolean isMetricFilter = metrics.stream()
+                    .anyMatch(m -> m.getColumn().equals(rule.getColumn()));
+
+            if (isMetricFilter) {
+                // Nếu là cột Metric (vd: doanhThu) -> Đưa vào HAVING để xử lý sau
+                havingRules.add(rule);
+            } else {
+                // Nếu là cột Dimension (vd: tenPhongBan, nam) -> Đưa vào WHERE để lọc ngay
+                whereRules.add(rule);
+            }
+        }
+
+        // BƯỚC 2: Lọc dữ liệu thô (Chỉ áp dụng WHERE rules)
+        // Dữ liệu thô của 'doanhThu' sẽ được giữ nguyên để tính tổng cho đúng
+        List<MapDataItem> processedData = dataFilter.filter(rawData, whereRules);
+
+        // BƯỚC 3: Tính toán tổng hợp (Aggregation)
+        List<MapDataItem> chartData = aggregator.aggregate(processedData, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
+        // BƯỚC 4: Lọc dữ liệu sau tính toán (HAVING logic)
+        if (!havingRules.isEmpty() && !chartData.isEmpty()) {
+            List<FilterRule> finalHavingRules = new ArrayList<>();
+
+            for (FilterRule rule : havingRules) {
+                // Tìm MetricConfig tương ứng để lấy Label (VD: đổi "doanhThu" thành "SUM(doanhThu)")
+                MetricConfig targetMetric = metrics.stream()
+                        .filter(m -> m.getColumn().equals(rule.getColumn()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (targetMetric != null) {
+                    // Tạo rule mới áp dụng lên kết quả tính toán
+                    finalHavingRules.add(new FilterRule(
+                            targetMetric.getLabel(), // Key trong chartData là Label (SUM(...))
+                            rule.getOperator(),
+                            rule.getValue()
+                    ));
+                }
+            }
+
+            // Áp dụng lọc lần cuối
+            chartData = dataFilter.filter(chartData, finalHavingRules);
+        }
         // 2. Sort (Sort DESC theo metric đầu tiên để lấy Top N nếu chưa có sort)
         if (settings.getQuerySortMetric() == null && !metrics.isEmpty()) {
             String sortKey = metrics.get(0).getLabel();

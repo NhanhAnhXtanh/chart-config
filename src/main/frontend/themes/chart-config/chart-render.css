@@ -37,6 +37,7 @@ vaadin-accordion-panel::part(content) {
     border-radius: 6px;
     padding: 8px 12px;
     align-items: center;
+
     gap: 10px;
     cursor: grab;
     border: 1px solid transparent;

@@ -232,7 +232,7 @@ public class ChartConfigView extends StandardView {
                     .setCursor("grab").setMarginBottom("8px")
                     .setBorder("1px solid #e0e0e0").setBorderRadius("6px")
                     .setBackgroundColor("white")
-                    .setFontSize("10px")
+                    .setFontSize("18px")
                     .setBackgroundColor("#f7f7f7")
                     .setFontWeight("500");
 

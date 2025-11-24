@@ -101,7 +101,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         });
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
-        DropZoneUtils.setupFilter(filtersDrop, filters);
+        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
         DropZoneUtils.setupSingleMetricZone(querySortDrop, querySortMetric, new ArrayList<>(fieldsTypeMap.keySet()),
                 (cfg) -> { this.querySortMetric = cfg; refreshUI(); },
                 () -> { this.querySortMetric = null; refreshUI(); }
@@ -121,7 +121,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
             });
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshXAxisSortOptions);
             DropZoneUtils.updateMulti(dimensionsDrop, dimensions);
-            DropZoneUtils.updateFilters(filtersDrop, filters);
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
             DropZoneUtils.updateSingleMetricVisuals(querySortDrop, querySortMetric, new ArrayList<>(fieldsTypeMap.keySet()),
                     (cfg) -> { this.querySortMetric = cfg; refreshUI(); },
                     () -> { this.querySortMetric = null; refreshUI(); }
@@ -238,7 +238,24 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string"));
         if (metricsDrop != null) DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
     }
-    @Override public void setColumnTypes(Map<String, String> types) { this.fieldsTypeMap = types != null ? types : new HashMap<>(); checkTimeGrainVisibility(); checkSortVisibility(); }
+    @Override
+    public void setColumnTypes(Map<String, String> types) {
+        // 1. Giữ nguyên tham chiếu object map, chỉ thay đổi nội dung bên trong
+        this.fieldsTypeMap.clear();
+        if (types != null) {
+            this.fieldsTypeMap.putAll(types);
+        }
+
+        // 2. Logic kiểm tra hiển thị UI
+        checkTimeGrainVisibility();
+        checkSortVisibility();
+
+        // 3. (Tuỳ chọn) Cập nhật lại UI các filter hiện có nếu cần thiết
+        // Để đảm bảo nếu đang có filter cũ thì khi bấm Edit nó nhận đúng Type mới
+        if (filtersDrop != null) {
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
+        }
+    }
     @Override public boolean isValid() { return xAxis != null && !metrics.isEmpty(); }
     @Override public String getMainDimension() { return xAxis; }
     @Override public void setMainDimension(String f) { xAxis = f; barSettingsDc.getItem().setValue("xAxis", f); if(xDrop!=null) refreshUI(); checkTimeGrainVisibility(); checkSortVisibility();}

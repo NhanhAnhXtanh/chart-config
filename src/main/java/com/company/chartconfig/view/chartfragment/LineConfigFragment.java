@@ -67,7 +67,7 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
         });
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
-        DropZoneUtils.setupFilter(filtersDrop, filters);
+        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
 
         refreshUI();
     }
@@ -80,7 +80,7 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
             });
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {});
             DropZoneUtils.updateMulti(dimensionsDrop, dimensions);
-            DropZoneUtils.updateFilters(filtersDrop, filters);
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
         }
     }
 

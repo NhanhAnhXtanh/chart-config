@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -16,7 +15,6 @@ public class ChartDataFilter {
         if (rules == null || rules.isEmpty()) {
             return rawData;
         }
-
         return rawData.stream()
                 .filter(item -> matchesAllRules(item, rules))
                 .collect(Collectors.toList());
@@ -25,7 +23,7 @@ public class ChartDataFilter {
     private boolean matchesAllRules(MapDataItem item, List<FilterRule> rules) {
         for (FilterRule rule : rules) {
             if (!checkRule(item, rule)) {
-                return false; // Chỉ cần 1 rule sai là loại bỏ (Logic AND)
+                return false;
             }
         }
         return true;
@@ -33,57 +31,84 @@ public class ChartDataFilter {
 
     private boolean checkRule(MapDataItem item, FilterRule rule) {
         String col = rule.getColumn();
-        Object itemValue = item.getValue(col); // Giá trị trong DB (Number, String, Boolean...)
-        String filterValue = rule.getValue();// Giá trị user nhập (Luôn là String)
+        Object itemValue = item.getValue(col);
+        String filterValue = rule.getValue();
         String op = rule.getOperator();
 
-        if (itemValue == null) return false; // Tạm thời loại bỏ null
+        if (itemValue == null) return false;
 
-        // Xử lý so sánh số (Number)
-        if (itemValue instanceof Number) {
-            return checkNumber((Number) itemValue, op, filterValue);
+        // 1. Ưu tiên xử lý các toán tử đặc thù của String trước
+        if ("LIKE".equalsIgnoreCase(op) || "IN".equalsIgnoreCase(op)) {
+            return checkString(itemValue.toString(), op, filterValue);
         }
 
-        // Xử lý so sánh chuỗi (String)
+        // 2. Cố gắng so sánh SỐ (Kể cả khi dữ liệu là String "123")
+        Double num1 = tryParseDouble(itemValue);
+        Double num2 = tryParseDouble(filterValue);
+
+        if (num1 != null && num2 != null) {
+            return checkNumber(num1, op, num2);
+        }
+
+        // 3. Fallback: Nếu không phải số, so sánh CHUỖI (theo Alpha-beta)
         return checkString(itemValue.toString(), op, filterValue);
     }
 
-    private boolean checkNumber(Number val, String op, String filterStr) {
-        try {
-            double v1 = val.doubleValue();
-            double v2 = Double.parseDouble(filterStr);
-
-            return switch (op) {
-                case "=" -> v1 == v2;
-                case "!=" -> v1 != v2;
-                case ">" -> v1 > v2;
-                case "<" -> v1 < v2;
-                case ">=" -> v1 >= v2;
-                case "<=" -> v1 <= v2;
-                default -> false;
-            };
-        } catch (NumberFormatException e) {
-            return false; // User nhập không phải số
-        }
-    }
-
-    private boolean checkString(String val, String op, String filterStr) {
-        // So sánh không phân biệt hoa thường cho tiện
-        String s1 = val.toLowerCase();
-        String s2 = filterStr.toLowerCase();
-
+    /**
+     * So sánh 2 số thực
+     */
+    private boolean checkNumber(Double v1, String op, Double v2) {
         return switch (op) {
-            case "=" -> s1.equals(s2);
-            case "!=" -> !s1.equals(s2);
-            case "LIKE" -> s1.contains(s2);
-            case "IN" -> {
-                // User nhập: "A, B, C" -> Split ra check
-                List<String> options = Arrays.stream(s2.split(","))
-                        .map(String::trim)
-                        .toList();
-                yield options.contains(s1);
-            }
+            case "=" -> Double.compare(v1, v2) == 0;
+            case "!=" -> Double.compare(v1, v2) != 0;
+            case ">" -> v1 > v2;
+            case "<" -> v1 < v2;
+            case ">=" -> v1 >= v2;
+            case "<=" -> v1 <= v2;
             default -> false;
         };
+    }
+
+    /**
+     * So sánh 2 chuỗi (Hỗ trợ cả >, < cho chữ cái)
+     */
+    private boolean checkString(String s1, String op, String s2) {
+        String val = s1.toLowerCase().trim();
+        String filter = s2.toLowerCase().trim();
+
+        int compareResult = val.compareTo(filter); // <0: nhỏ hơn, 0: bằng, >0: lớn hơn
+
+        return switch (op) {
+            case "=" -> val.equals(filter);
+            case "!=" -> !val.equals(filter);
+            case "LIKE" -> val.contains(filter);
+            case "IN" -> {
+                // Tách chuỗi bằng dấu phẩy
+                List<String> options = Arrays.stream(s2.split(","))
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .toList();
+                yield options.contains(val);
+            }
+            // Hỗ trợ so sánh chữ cái (Ví dụ: Ngày tháng dạng text, hoặc Tên)
+            case ">" -> compareResult > 0;
+            case "<" -> compareResult < 0;
+            case ">=" -> compareResult >= 0;
+            case "<=" -> compareResult <= 0;
+            default -> false;
+        };
+    }
+
+    /**
+     * Helper: Cố gắng ép kiểu về Double, nếu lỗi trả về null
+     */
+    private Double tryParseDouble(Object obj) {
+        if (obj == null) return null;
+        if (obj instanceof Number) return ((Number) obj).doubleValue();
+        try {
+            return Double.parseDouble(obj.toString().trim().replace(",", ""));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

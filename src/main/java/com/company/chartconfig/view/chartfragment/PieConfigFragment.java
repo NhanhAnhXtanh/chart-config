@@ -56,7 +56,7 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
             pieSettingsDc.getItem().setValue("dimension", val);
         });
         DropZoneUtils.setupMetricZone(metricDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
-        DropZoneUtils.setupFilter(filtersDrop, filters);
+        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
 
         refreshUI();
     }
@@ -65,7 +65,7 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
         if (dimensionDrop != null) {
             DropZoneUtils.updateVisuals(dimensionDrop, dimension, v -> { this.dimension = v; pieSettingsDc.getItem().setValue("dimension", v); });
             DropZoneUtils.updateMetricVisuals(metricDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {});
-            DropZoneUtils.updateFilters(filtersDrop, filters);
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
         }
     }
 
