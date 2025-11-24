@@ -33,7 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Component
-public class LineChartBuilder implements ChartBuilder {
+public class AreaChartBuilder implements ChartBuilder {
 
     private final UiComponents uiComponents;
     private final ObjectMapper objectMapper;
@@ -42,7 +42,7 @@ public class LineChartBuilder implements ChartBuilder {
     private final ChartDataFilter dataFilter;
     private final ChartDataProcessor dataProcessor;
 
-    public LineChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
+    public AreaChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
                             ChartDataAggregator aggregator, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
@@ -53,44 +53,36 @@ public class LineChartBuilder implements ChartBuilder {
     }
 
     @Override
-    public boolean supports(ChartType type) {
-        return type == ChartType.LINE;
-    }
+    public boolean supports(ChartType type) { return type == ChartType.AREA; }
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
+
+        // Tắt mặc định stack để fix lỗi hiển thị (hoặc lấy từ config)
+        boolean isStacked = root.path("isStacked").asBoolean(false);
+
         int rowLimit = settings.getRowLimit();
         int seriesLimit = settings.getSeriesLimit();
 
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) {
-            root.path("metrics").forEach(n -> {
-                try {
-                    metrics.add(objectMapper.treeToValue(n, MetricConfig.class));
-                } catch (Exception e) {
-                }
-            });
+            root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
         }
         List<FilterRule> filters = new ArrayList<>();
         if (root.path("filters").isArray()) {
-            root.path("filters").forEach(n -> {
-                try {
-                    filters.add(objectMapper.treeToValue(n, FilterRule.class));
-                } catch (Exception e) {
-                }
-            });
+            root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
         }
 
         if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 1. AGGREGATE (Tính toán trước)
+        // 1. AGGREGATE
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
         List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 2. SMART METRIC LIMIT (Giữ lại Top N Metric lớn nhất dựa trên data thực tế)
+        // 2. SMART METRIC LIMIT (Top N Metric lớn nhất)
         dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
 
         // 3. SORT DATE
@@ -102,7 +94,18 @@ public class LineChartBuilder implements ChartBuilder {
         dataProcessor.applyTailLimit(chartData, rowLimit);
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
-        // 5. BUILD UI
+        // 5. SMART LAYERING (Chỉ khi không Stack)
+        // Sắp xếp Metric theo tổng giá trị Giảm dần. Lớn vẽ trước (nền), nhỏ vẽ sau (đè).
+        if (!isStacked) {
+            final List<MapDataItem> finalData = chartData;
+            metrics.sort((m1, m2) -> {
+                double sum1 = finalData.stream().mapToDouble(i -> getVal(i, m1.getLabel())).sum();
+                double sum2 = finalData.stream().mapToDouble(i -> getVal(i, m2.getLabel())).sum();
+                return Double.compare(sum2, sum1);
+            });
+        }
+
+        // 6. BUILD UI
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xAxisField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -120,8 +123,7 @@ public class LineChartBuilder implements ChartBuilder {
         container.setItems(entities);
 
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%");
-        chart.setHeight("100%");
+        chart.setWidth("100%"); chart.setHeight("100%");
 
         String[] valFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
         DataSet dataSet = new DataSet().withSource(
@@ -141,6 +143,17 @@ public class LineChartBuilder implements ChartBuilder {
             s.setSmooth(0.5);
             s.setConnectNulls(true);
 
+            LineSeries.AreaStyle areaStyle = new LineSeries.AreaStyle();
+
+            if (isStacked) {
+                s.setStack("total");
+                areaStyle.setOpacity(0.7);
+            } else {
+                s.setStack(null);
+                areaStyle.setOpacity(0.4); // Trong suốt để thấy lớp bên dưới
+            }
+            s.setAreaStyle(areaStyle);
+
             Encode encode = new Encode();
             encode.setX(xAxisField);
             encode.setY(m.getLabel());
@@ -155,6 +168,11 @@ public class LineChartBuilder implements ChartBuilder {
     }
 
     // HELPER METHODS
+    private double getVal(MapDataItem item, String key) {
+        Object v = item.getValue(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
+    }
+
     private boolean isDateColumn(List<MapDataItem> data, String field) {
         if (data == null || data.isEmpty()) return false;
         Object v = data.get(0).getValue(field);
@@ -167,10 +185,6 @@ public class LineChartBuilder implements ChartBuilder {
         String s = val.toString().trim().split(" ")[0];
         String clean = s.replace("-", "/").replace(".", "/");
         if (clean.matches("^\\d{4}/.*")) return clean;
-        try {
-            return new java.text.SimpleDateFormat("dd/MM/yyyy").parse(clean);
-        } catch (Exception e) {
-            return s;
-        }
+        try { return new java.text.SimpleDateFormat("dd/MM/yyyy").parse(clean); } catch (Exception e) { return s; }
     }
 }

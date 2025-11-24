@@ -1,6 +1,7 @@
 package com.company.chartconfig.view.config;
 
 import com.company.chartconfig.enums.ChartType;
+import com.company.chartconfig.view.chartfragment.AreaConfigFragment;
 import com.company.chartconfig.view.chartfragment.BarConfigFragment;
 import com.company.chartconfig.view.chartfragment.LineConfigFragment;
 import com.company.chartconfig.view.chartfragment.PieConfigFragment;
@@ -21,7 +22,7 @@ public class ChartFragmentRegistry {
         register(ChartType.BAR, BarConfigFragment.class);
         register(ChartType.PIE, PieConfigFragment.class);
         register(ChartType.LINE, LineConfigFragment.class);
-        // register(ChartType.LINE, LineConfigFragment.class);
+         register(ChartType.AREA, AreaConfigFragment.class);
     }
 
     public void register(ChartType type, Class<? extends Fragment<?>> fragmentClass) {

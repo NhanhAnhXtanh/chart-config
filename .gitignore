@@ -17,6 +17,7 @@ src/main/bundles/
 *.ipr
 out/
 /target/
+bin/*
 
 ### VS Code ###
 .vscode/

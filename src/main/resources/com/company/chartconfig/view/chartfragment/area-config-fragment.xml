@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <data>
+        <keyValueInstance id="areaSettingsDc">
+            <properties>
+                <property name="xAxis" datatype="string"/>
+                <property name="seriesLimit" datatype="int"/>
+                <property name="rowLimit" datatype="int"/>
+                <property name="isStacked" datatype="boolean"/>
+            </properties>
+        </keyValueInstance>
+    </data>
+
+    <content>
+        <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
+            <!-- X-AXIS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="X-axis (Time)" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="xDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- METRICS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Metrics" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="metricsDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- FILTERS -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Filters" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- OPTIONS -->
+            <details summaryText="Options" themeNames="small" opened="true">
+                <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+
+                    <!-- STACKED TOGGLE -->
+                    <checkbox id="stackedField"
+                              label="Stack Area"
+                              dataContainer="areaSettingsDc"
+                              property="isStacked"/>
+
+                    <!-- Series Limit -->
+                    <vbox spacing="false" padding="false" css="gap: 4px;">
+                        <span text="Series Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                        <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"
+                                  dataContainer="areaSettingsDc" property="seriesLimit"/>
+                    </vbox>
+
+                    <!-- Row Limit -->
+                    <vbox spacing="false" padding="false" css="gap: 4px;">
+                        <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                        <comboBox id="rowLimitField" width="100%" allowCustomValue="true"
+                                  dataContainer="areaSettingsDc" property="rowLimit"/>
+                    </vbox>
+                </vbox>
+            </details>
+        </vbox>
+    </content>
+</fragment>

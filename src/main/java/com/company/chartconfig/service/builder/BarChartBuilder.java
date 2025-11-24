@@ -15,6 +15,7 @@ import io.jmix.chartsflowui.data.ContainerChartItems;
 import io.jmix.chartsflowui.data.item.EntityDataItem;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import io.jmix.chartsflowui.kit.component.model.DataSet;
+import io.jmix.chartsflowui.kit.component.model.Tooltip;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisLabel;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisType;
 import io.jmix.chartsflowui.kit.component.model.axis.XAxis;
@@ -64,7 +65,7 @@ public class BarChartBuilder implements ChartBuilder {
         String xField = settings.getXAxisField();
 
         // Lấy giới hạn
-        int rowLimit = settings.getRowLimit();       // Giới hạn số dòng (Top N Products)
+        int rowLimit = settings.getRowLimit();       // Giới hạn số dòng (Top N Rows)
         int seriesLimit = settings.getSeriesLimit(); // Giới hạn số lượng Metrics (Columns)
 
         List<MetricConfig> metrics = new ArrayList<>();
@@ -75,53 +76,45 @@ public class BarChartBuilder implements ChartBuilder {
 
         if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin trục X hoặc Metrics");
 
-        // -----------------------------------------------------------
-        // 2. XỬ LÝ SERIES LIMIT (Cắt bớt Metrics TRƯỚC khi tính toán)
-        // -----------------------------------------------------------
-        dataProcessor.applyMetricLimit(metrics, seriesLimit);
 
-        // 3. PIPELINE: Filter -> Aggregate
-        // (Chỉ tính toán cho các metrics còn lại trong list)
+        // 2. PIPELINE: Filter -> Aggregate (Tính toán TẤT CẢ metrics trước)
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
         List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 4. SORTING (Quan trọng: Sort trước khi cắt Row Limit để lấy đúng Top N)
+        // 3. SMART METRIC LIMIT (Giữ lại Top N Metric lớn nhất dựa trên data thực tế)
+        dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
+
+        // 4. VISUAL SORT (X-AXIS SORT)
         String xAxisSortBy = settings.getXAxisSortBy();
         if (xAxisSortBy != null && !xAxisSortBy.isEmpty()) {
             boolean isMetric = metrics.stream().anyMatch(m -> m.getLabel().equals(xAxisSortBy));
 
             if (isMetric) {
-                // Sort theo giá trị Metric (VD: Doanh thu)
                 chartData.sort(Comparator.comparingDouble(item -> {
                     Object v = item.getValue(xAxisSortBy);
                     return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
                 }));
             } else {
-                // Sort theo Tên Trục X (VD: Tên sản phẩm)
                 chartData.sort(Comparator.comparing(item -> {
                     Object v = item.getValue(xField);
                     return v != null ? v.toString() : "";
                 }));
             }
 
-            // Đảo ngược nếu không phải Ascending (Mặc định Comparator là ASC)
             if (!settings.isXAxisSortAsc()) {
                 Collections.reverse(chartData);
             }
         }
 
-        // 5. XỬ LÝ ROW LIMIT (Cắt bớt Dữ liệu - HEAD LIMIT)
-        // Với Bar Chart, ta lấy N phần tử đầu tiên (Top N)
+        // 5. XỬ LÝ ROW LIMIT (HEAD LIMIT - Lấy Top N dòng đầu tiên)
         dataProcessor.applyHeadLimit(chartData, rowLimit);
 
-        // 6. Tính % Contribution (Chỉ tính trên data đã lọc và giới hạn)
+        // 6. Tính % Contribution
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
+        // --- 6. BUILD CHART UI (Giữ nguyên như cũ) ---
 
-        // --- 7. BUILD CHART UI ---
-
-        // Create Container
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -135,7 +128,6 @@ public class BarChartBuilder implements ChartBuilder {
         }
         container.setItems(entities);
 
-        // Config Chart
         Chart chart = uiComponents.create(Chart.class);
         chart.setWidth("100%"); chart.setHeight("100%");
 
@@ -150,8 +142,6 @@ public class BarChartBuilder implements ChartBuilder {
 
         // --- X-AXIS CONFIG ---
         XAxis xAxis = new XAxis().withName(xField);
-
-        // Quyết định kiểu trục
         if (settings.isForceCategorical()) {
             xAxis.withType(AxisType.CATEGORY);
         }
@@ -206,8 +196,7 @@ public class BarChartBuilder implements ChartBuilder {
 
         chart.withLegend(new Legend());
 
-        // --- TOOLTIP ---
-        io.jmix.chartsflowui.kit.component.model.Tooltip tooltip = new io.jmix.chartsflowui.kit.component.model.Tooltip();
+        Tooltip tooltip = new Tooltip();
         tooltip.setTrigger(io.jmix.chartsflowui.kit.component.model.shared.AbstractTooltip.Trigger.AXIS);
 
         if (settings.getContributionMode() != ContributionMode.NONE) {

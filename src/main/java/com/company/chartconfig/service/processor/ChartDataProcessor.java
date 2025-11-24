@@ -7,7 +7,9 @@ import com.company.chartconfig.view.common.MetricConfig;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class ChartDataProcessor {
@@ -90,10 +92,40 @@ public class ChartDataProcessor {
         return 0.0;
     }
 
-    // Xử lý cắt Metric (Series Limit)
-    public void applyMetricLimit(List<MetricConfig> metrics, int limit) {
-        if (limit > 0 && metrics.size() > limit) {
-            metrics.subList(limit, metrics.size()).clear();
+    public void applyMetricLimit(List<MetricConfig> metrics, List<MapDataItem> data, int limit) {
+        // 1. Validate: Nếu không có limit hoặc limit quá lớn thì bỏ qua
+        if (limit <= ChartConstants.LIMIT_NONE || metrics.size() <= limit || data == null || data.isEmpty()) {
+            return;
         }
+
+        // 2. Tính tổng giá trị (Total Volume) cho từng Metric
+        // Key: Tên Metric, Value: Tổng giá trị
+        Map<String, Double> metricTotals = new HashMap<>();
+
+        for (MetricConfig m : metrics) {
+            String key = m.getLabel();
+            double total = 0;
+
+            // Duyệt qua toàn bộ dữ liệu để cộng dồn
+            for (MapDataItem item : data) {
+                Object v = item.getValue(key);
+                if (v instanceof Number) {
+                    total += ((Number) v).doubleValue();
+                }
+            }
+            metricTotals.put(key, total);
+        }
+
+        // 3. Sắp xếp danh sách Metrics: Giá trị TO lên đầu, BÉ xuống cuối
+        metrics.sort((m1, m2) -> {
+            double t1 = metricTotals.getOrDefault(m1.getLabel(), 0.0);
+            double t2 = metricTotals.getOrDefault(m2.getLabel(), 0.0);
+            // So sánh DESC (Giảm dần)
+            return Double.compare(t2, t1);
+        });
+
+        // 4. Cắt danh sách (Chỉ giữ lại Top N phần tử đầu tiên)
+        // Các phần tử từ vị trí 'limit' trở đi sẽ bị xóa khỏi list
+        metrics.subList(limit, metrics.size()).clear();
     }
 }
