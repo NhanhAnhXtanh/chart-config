@@ -32,10 +32,10 @@ public class ChartDataFilter {
     }
 
     private boolean checkRule(MapDataItem item, FilterRule rule) {
-        String col = rule.column();
+        String col = rule.getColumn();
         Object itemValue = item.getValue(col); // Giá trị trong DB (Number, String, Boolean...)
-        String filterValue = rule.value();  // Giá trị user nhập (Luôn là String)
-        String op = rule.operator();
+        String filterValue = rule.getValue();// Giá trị user nhập (Luôn là String)
+        String op = rule.getOperator();
 
         if (itemValue == null) return false; // Tạm thời loại bỏ null
 

@@ -144,21 +144,42 @@ public class DropZoneUtils {
         setupCommonEvents(zone);
         DropTarget<Div> dropTarget = DropTarget.configure(zone);
         dropTarget.setActive(true);
+
         dropTarget.addDropListener(e -> e.getDragSourceComponent().ifPresent(src -> {
             String col = src.getElement().getAttribute("data-field-name");
-            if (col != null) openFilterEditor(zone, filters, col);
+            if (col != null) {
+                // Mở dialog tạo mới
+                openFilterEditor(null, col, rule -> {
+                    filters.add(rule);
+                    updateFilters(zone, filters);
+                });
+            }
         }));
         updateFilters(zone, filters);
     }
 
     public static void updateFilters(Div zone, List<com.company.chartconfig.utils.FilterRule> filters) {
         zone.removeAll();
-        if (filters.isEmpty()) renderEmptyState(zone, "Kéo thả Filter");
-        else { zone.addClassName("filled"); filters.forEach(f -> {
-            String label = f.column() + " " + f.operator() + " " + f.value();
-            zone.add(createChip(label, ()->{filters.remove(f); updateFilters(zone,filters);}, null));
-        }); }
+        if (filters.isEmpty()) {
+            renderEmptyState(zone, "Kéo thả Filter");
+        } else {
+            zone.addClassName("filled");
+            for (com.company.chartconfig.utils.FilterRule f : filters) {
+                String label = f.getColumn() + " " + f.getOperator() + " " + f.getValue();
+
+                // Tạo Chip: Xóa thì remove khỏi list, Click thì mở dialog sửa
+                zone.add(createChip(label,
+                        () -> { filters.remove(f); updateFilters(zone, filters); }, // On Delete
+                        () -> openFilterEditor(f, f.getColumn(), rule -> {          // On Click (Edit)
+                            // Vì FilterRule là Mutable (Class), ta chỉ cần update UI
+                            // (Hàm openFilterEditor đã set giá trị mới vào f rồi)
+                            updateFilters(zone, filters);
+                        })
+                ));
+            }
+        }
     }
+
 
     private static Span createChip(String text, Runnable onDeleteAction, Runnable onClickAction) {
         Span chip = new Span();
@@ -194,19 +215,37 @@ public class DropZoneUtils {
         zone.getElement().addEventListener("drop", e -> zone.removeClassName("drag-over"));
     }
 
-    private static void openFilterEditor(Div zone, List<com.company.chartconfig.utils.FilterRule> list, String column) {
+    private static void openFilterEditor(com.company.chartconfig.utils.FilterRule existingRule, String column, Consumer<com.company.chartconfig.utils.FilterRule> onSave) {
         Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Filter: " + column);
+
+        // Nếu là Sửa (existingRule != null) thì dùng lại object cũ, nếu Tạo mới thì new object
+        com.company.chartconfig.utils.FilterRule rule = (existingRule != null)
+                ? existingRule
+                : new com.company.chartconfig.utils.FilterRule(column, "=", "");
+
         TextField valueField = new TextField("Value");
+        valueField.setValue(rule.getValue() == null ? "" : rule.getValue());
+
         ComboBox<String> operator = new ComboBox<>("Operator");
-        operator.setItems("=", "!=", ">", "<", "LIKE", "IN");
-        operator.setValue("=");
+        operator.setItems("=", "!=", ">", "<", ">=", "<=", "LIKE", "IN");
+        operator.setValue(rule.getOperator());
+        operator.setWidth("120px");
+
         com.vaadin.flow.component.button.Button ok = new com.vaadin.flow.component.button.Button("Apply", ev -> {
-            list.add(new com.company.chartconfig.utils.FilterRule(column, operator.getValue(), valueField.getValue()));
+            rule.setOperator(operator.getValue());
+            rule.setValue(valueField.getValue());
+            onSave.accept(rule);
             dialog.close();
-            updateFilters(zone, list);
         });
         ok.addThemeName("primary");
-        dialog.add(new H3("Filter: "+column), operator, valueField, ok);
+
+        // Layout nhanh
+        com.vaadin.flow.component.orderedlayout.HorizontalLayout form = new com.vaadin.flow.component.orderedlayout.HorizontalLayout(operator, valueField);
+        form.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.BASELINE);
+
+        dialog.add(form);
+        dialog.getFooter().add(new com.vaadin.flow.component.button.Button("Cancel", e -> dialog.close()), ok);
         dialog.open();
     }
 }

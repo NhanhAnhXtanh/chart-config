@@ -5,6 +5,7 @@ import com.company.chartconfig.model.ChartCommonSettings;
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
+import com.company.chartconfig.utils.ChartFormatterUtils;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,6 +16,7 @@ import io.jmix.chartsflowui.data.item.EntityDataItem;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import io.jmix.chartsflowui.kit.component.model.DataSet;
 import io.jmix.chartsflowui.kit.component.model.Tooltip;
+import io.jmix.chartsflowui.kit.component.model.axis.AxisLabel;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisType;
 import io.jmix.chartsflowui.kit.component.model.axis.XAxis;
 import io.jmix.chartsflowui.kit.component.model.axis.YAxis;
@@ -123,8 +125,17 @@ public class LineChartBuilder implements ChartBuilder {
         );
         chart.setDataSet(dataSet);
 
-        chart.addXAxis(new XAxis().withName(xAxisField).withType(AxisType.CATEGORY));
-        chart.addYAxis(new YAxis().withType(AxisType.VALUE));
+        XAxis xAxis = new XAxis().withName(xAxisField).withType(AxisType.CATEGORY);
+        AxisLabel xAxisLabel = new AxisLabel();
+        xAxisLabel.setFormatterFunction("function(value) { return value; }");
+        xAxis.setAxisLabel(xAxisLabel);
+        chart.addXAxis(xAxis);
+
+        YAxis yAxis = new YAxis().withType(AxisType.VALUE);
+        AxisLabel yAxisLabel = new AxisLabel();
+        yAxisLabel.setFormatterFunction(ChartFormatterUtils.getUniversalValueFormatter());
+        yAxis.setAxisLabel(yAxisLabel);
+        chart.addYAxis(yAxis);
 
         for (MetricConfig m : metrics) {
             LineSeries s = new LineSeries();
@@ -137,7 +148,10 @@ public class LineChartBuilder implements ChartBuilder {
             chart.addSeries(s);
         }
         chart.withLegend(new Legend());
-        chart.withTooltip(new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS));
+        Tooltip tooltip = new Tooltip();
+        tooltip.setTrigger(AbstractTooltip.Trigger.AXIS);
+        tooltip.setValueFormatterFunction(ChartFormatterUtils.getTooltipNumberFormatter());
+        chart.withTooltip(tooltip);
 
         return chart;
     }
