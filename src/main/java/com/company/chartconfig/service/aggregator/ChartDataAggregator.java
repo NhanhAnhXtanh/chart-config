@@ -183,4 +183,8 @@ public class ChartDataAggregator {
             return val.toString();
         }
     }
+
+    public BigDecimal calculateMetric(List<MapDataItem> items, String col, String aggType) {
+        return calculateMetric(items, col, aggType, null);
+    }
 }

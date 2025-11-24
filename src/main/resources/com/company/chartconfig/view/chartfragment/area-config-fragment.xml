@@ -31,31 +31,19 @@
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- OPTIONS -->
-            <details summaryText="Options" themeNames="small" opened="true">
-                <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+            <!-- Series Limit -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Series Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"
+                          dataContainer="areaSettingsDc" property="seriesLimit"/>
+            </vbox>
 
-                    <!-- STACKED TOGGLE -->
-                    <checkbox id="stackedField"
-                              label="Stack Area"
-                              dataContainer="areaSettingsDc"
-                              property="isStacked"/>
-
-                    <!-- Series Limit -->
-                    <vbox spacing="false" padding="false" css="gap: 4px;">
-                        <span text="Series Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                        <comboBox id="seriesLimitField" width="100%" allowCustomValue="true"
-                                  dataContainer="areaSettingsDc" property="seriesLimit"/>
-                    </vbox>
-
-                    <!-- Row Limit -->
-                    <vbox spacing="false" padding="false" css="gap: 4px;">
-                        <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
-                        <comboBox id="rowLimitField" width="100%" allowCustomValue="true"
-                                  dataContainer="areaSettingsDc" property="rowLimit"/>
-                    </vbox>
-                </vbox>
-            </details>
+            <!-- Row Limit -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                <comboBox id="rowLimitField" width="100%" allowCustomValue="true"
+                          dataContainer="areaSettingsDc" property="rowLimit"/>
+            </vbox>
         </vbox>
     </content>
 </fragment>

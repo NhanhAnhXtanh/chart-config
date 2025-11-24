@@ -99,7 +99,7 @@ public class LineChartBuilder implements ChartBuilder {
         }
 
         // 4. ROW LIMIT
-        dataProcessor.applyTailLimit(chartData, rowLimit);
+        dataProcessor.applyHeadLimit(chartData, rowLimit);
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
         // 5. BUILD UI

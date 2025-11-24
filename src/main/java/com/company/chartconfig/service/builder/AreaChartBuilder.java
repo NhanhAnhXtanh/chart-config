@@ -95,7 +95,7 @@ public class AreaChartBuilder implements ChartBuilder {
         }
 
         // 4. PROCESS DATA (ROW LIMIT)
-        dataProcessor.applyTailLimit(chartData, rowLimit);
+        dataProcessor.applyHeadLimit(chartData, rowLimit);
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
         // SMART LAYERING (SẮP XẾP LỚP VẼ)
