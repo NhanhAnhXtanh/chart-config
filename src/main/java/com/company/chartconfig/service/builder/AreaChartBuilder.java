@@ -30,7 +30,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class AreaChartBuilder implements ChartBuilder {
@@ -53,15 +55,17 @@ public class AreaChartBuilder implements ChartBuilder {
     }
 
     @Override
-    public boolean supports(ChartType type) { return type == ChartType.AREA; }
+    public boolean supports(ChartType type) {
+        return type == ChartType.AREA;
+    }
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
 
-        // Tắt mặc định stack để fix lỗi hiển thị (hoặc lấy từ config)
-        boolean isStacked = root.path("isStacked").asBoolean(false);
+        // Is Stacked
+        boolean isStacked = false;
 
         int rowLimit = settings.getRowLimit();
         int seriesLimit = settings.getSeriesLimit();
@@ -77,12 +81,12 @@ public class AreaChartBuilder implements ChartBuilder {
 
         if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 1. AGGREGATE
+        // 1. AGGREGATE DATA
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
         List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 2. SMART METRIC LIMIT (Top N Metric lớn nhất)
+        // 2. SMART METRIC LIMIT
         dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
 
         // 3. SORT DATE
@@ -90,22 +94,28 @@ public class AreaChartBuilder implements ChartBuilder {
             chartData.sort(Comparator.comparing(item -> parseDateSortable(item.getValue(xAxisField))));
         }
 
-        // 4. ROW LIMIT
+        // 4. PROCESS DATA (ROW LIMIT)
         dataProcessor.applyTailLimit(chartData, rowLimit);
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
-        // 5. SMART LAYERING (Chỉ khi không Stack)
-        // Sắp xếp Metric theo tổng giá trị Giảm dần. Lớn vẽ trước (nền), nhỏ vẽ sau (đè).
+        // SMART LAYERING (SẮP XẾP LỚP VẼ)
         if (!isStacked) {
-            final List<MapDataItem> finalData = chartData;
+            // Tính tổng volume trước để tránh tính đi tính lại trong comparator
+            Map<String, Double> volumeMap = new HashMap<>();
+            for (MetricConfig m : metrics) {
+                double sum = chartData.stream().mapToDouble(i -> getVal(i, m.getLabel())).sum();
+                volumeMap.put(m.getLabel(), sum);
+            }
+
+            // Sort Metric
             metrics.sort((m1, m2) -> {
-                double sum1 = finalData.stream().mapToDouble(i -> getVal(i, m1.getLabel())).sum();
-                double sum2 = finalData.stream().mapToDouble(i -> getVal(i, m2.getLabel())).sum();
-                return Double.compare(sum2, sum1);
+                Double v1 = volumeMap.getOrDefault(m1.getLabel(), 0.0);
+                Double v2 = volumeMap.getOrDefault(m2.getLabel(), 0.0);
+                return Double.compare(v2, v1);
             });
         }
 
-        // 6. BUILD UI
+        // 5. BUILD UI CONTAINER
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xAxisField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -137,12 +147,14 @@ public class AreaChartBuilder implements ChartBuilder {
         chart.addXAxis(new XAxis().withName(xAxisField).withType(AxisType.CATEGORY));
         chart.addYAxis(new YAxis().withType(AxisType.VALUE));
 
+        // Vẽ Series
         for (MetricConfig m : metrics) {
             LineSeries s = new LineSeries();
             s.setName(m.getLabel());
             s.setSmooth(0.5);
             s.setConnectNulls(true);
 
+            // [FIX 3] CẤU HÌNH STYLE
             LineSeries.AreaStyle areaStyle = new LineSeries.AreaStyle();
 
             if (isStacked) {
@@ -150,7 +162,7 @@ public class AreaChartBuilder implements ChartBuilder {
                 areaStyle.setOpacity(0.7);
             } else {
                 s.setStack(null);
-                areaStyle.setOpacity(0.4); // Trong suốt để thấy lớp bên dưới
+                areaStyle.setOpacity(0.5);
             }
             s.setAreaStyle(areaStyle);
 
@@ -162,12 +174,15 @@ public class AreaChartBuilder implements ChartBuilder {
             chart.addSeries(s);
         }
         chart.withLegend(new Legend());
-        chart.withTooltip(new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS));
+
+        // Tooltip hiển thị cả giá trị để dễ so sánh
+        Tooltip tooltip = new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS);
+        chart.withTooltip(tooltip);
 
         return chart;
     }
 
-    // HELPER METHODS
+    // Helper
     private double getVal(MapDataItem item, String key) {
         Object v = item.getValue(key);
         return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
