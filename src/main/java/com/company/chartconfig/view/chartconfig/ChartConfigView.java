@@ -7,10 +7,6 @@ import com.company.chartconfig.model.FieldItem;
 import com.company.chartconfig.service.ChartConfigService;
 import com.company.chartconfig.view.config.ChartFragmentRegistry;
 import com.company.chartconfig.view.config.common.ChartConfigFragment;
-import com.company.chartconfig.view.chartfragment.BarConfigFragment;
-import com.company.chartconfig.view.chartfragment.LineConfigFragment;
-import com.company.chartconfig.view.chartfragment.PieConfigFragment;
-import com.company.chartconfig.view.config.common.ChartConfigFragment; // Interface
 import com.company.chartconfig.view.main.MainView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,12 +16,10 @@ import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.html.NativeLabel;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.listbox.ListBox;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout; // Import VerticalLayout
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabVariant;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.Route;
@@ -48,32 +42,24 @@ import java.util.stream.Collectors;
 @ViewDescriptor(path = "chart-config-view.xml")
 public class ChartConfigView extends StandardView {
 
-    @Autowired
-    private DataManager dataManager;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private Notifications notifications;
-    @Autowired
-    private ChartConfigService chartConfigService;
-    @Autowired
-    private ViewNavigators viewNavigators;
+    @Autowired private DataManager dataManager;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private Notifications notifications;
+    @Autowired private ChartConfigService chartConfigService;
+    @Autowired private ViewNavigators viewNavigators;
     @Autowired private Fragments fragments;
     @Autowired private ChartFragmentRegistry fragmentRegistry;
 
-    @ViewComponent
-    private NativeLabel datasetNameLabel;
-    @ViewComponent
-    private TypedTextField<Object> chartNameField;
-    @ViewComponent
-    private TypedTextField<String> searchField;
-    @ViewComponent
-    private ListBox<FieldItem> fieldsList;
-    @ViewComponent
-    private Tabs chartTypeTabs;
+    @ViewComponent private NativeLabel datasetNameLabel;
+    @ViewComponent private TypedTextField<Object> chartNameField;
+    @ViewComponent private TypedTextField<String> searchField;
+
+    // [THAY ĐỔI] Inject Container thay vì List
+    @ViewComponent private VerticalLayout fieldsContainer;
+
+    @ViewComponent private Tabs chartTypeTabs;
     @ViewComponent private VerticalLayout fragmentContainer;
-    @ViewComponent
-    private VerticalLayout chartContainer;
+    @ViewComponent private VerticalLayout chartContainer;
     @ViewComponent private JmixButton save;
 
     private UUID datasetId;
@@ -81,10 +67,9 @@ public class ChartConfigView extends StandardView {
     private Dataset dataset;
     private ChartConfig editingConfig;
 
-    // Cache danh sách trường và metadata
     private final List<FieldItem> allFieldItems = new ArrayList<>();
     private final List<String> allColumnNames = new ArrayList<>();
-    private final Map<String, String> allColumnTypes = new HashMap<>(); // (FIX) Map lưu kiểu
+    private final Map<String, String> allColumnTypes = new HashMap<>();
 
     private final Map<ChartType, ChartConfigFragment> fragmentCache = new HashMap<>();
     private final Map<Tab, ChartType> tabMap = new HashMap<>();
@@ -95,10 +80,11 @@ public class ChartConfigView extends StandardView {
         searchField.setValueChangeMode(ValueChangeMode.EAGER);
         searchField.addValueChangeListener(e -> doSearch());
     }
+
     @Subscribe
     public void onBeforeClose(final BeforeCloseEvent event) {
-        fragmentContainer.removeAll(); // Gỡ khỏi UI
-        fragmentCache.clear();         // Xóa tham chiếu
+        fragmentContainer.removeAll();
+        fragmentCache.clear();
     }
 
     private void setupDynamicTabs() {
@@ -131,13 +117,10 @@ public class ChartConfigView extends StandardView {
         this.currentChartType = newType;
         ChartConfigFragment newFrag = getOrCreateFragment(newType);
 
-        // --- FIX NULL POINTER EXCEPTION ---
         if (newFrag == null) {
-            // Nếu chưa có fragment cho loại này (ví dụ chưa code AreaChart), dừng lại để tránh lỗi
             fragmentContainer.removeAll();
             return;
         }
-        // ----------------------------------
 
         fragmentContainer.removeAll();
         if (newFrag instanceof Component comp) {
@@ -220,49 +203,72 @@ public class ChartConfigView extends StandardView {
 
                     allFieldItems.add(new FieldItem(name, type));
                     allColumnNames.add(name);
-                    allColumnTypes.put(name, type); // (FIX) Lưu metadata
+                    allColumnTypes.put(name, type);
                 }
             }
         } catch (Exception e) {
             notifications.create("Lỗi đọc schema: " + e.getMessage()).show();
         }
 
-        fieldsList.setItems(allFieldItems);
-        fieldsList.setRenderer(new ComponentRenderer<>(item -> {
-            NativeLabel lbl = new NativeLabel(getIconForType(item.type()) + " " + item.name());
-            lbl.getStyle()
-                    .setDisplay(Style.Display.FLEX).setWidth("100%")
-                    .setPadding("6px 12px").setBoxSizing(Style.BoxSizing.BORDER_BOX)
-                    .setCursor("grab").setMarginBottom("4px")
-                    .setBorder("1px solid #e0e0e0").setBorderRadius("6px")
-                    .setBackgroundColor("white").setFontSize("13px").setFontWeight("500");
-
-            lbl.getElement().setAttribute("data-field-name", item.name());
-            DragSource.create(lbl).setDragData(item.name());
-            return lbl;
-        }));
-
         // Cập nhật dữ liệu cho các fragment đã load
         fragmentCache.values().forEach(f -> {
             f.setAvailableFields(allColumnNames);
             f.setColumnTypes(allColumnTypes);
         });
+
+        // [THAY ĐỔI] Gọi hàm render thủ công thay vì setItems
+        renderFieldsList(allFieldItems);
+    }
+
+    // [HÀM MỚI] Render danh sách thủ công để không bị dính Selection
+    private void renderFieldsList(List<FieldItem> items) {
+        fieldsContainer.removeAll();
+        for (FieldItem item : items) {
+            NativeLabel lbl = new NativeLabel(getIconForType(item.type()) + " " + item.name());
+
+            lbl.getStyle()
+                    .setDisplay(Style.Display.FLEX).setWidth("100%")
+                    .setPadding("3px 8px").setBoxSizing(Style.BoxSizing.BORDER_BOX)
+                    .setCursor("grab").setMarginBottom("8px")
+                    .setBorder("1px solid #e0e0e0").setBorderRadius("6px")
+                    .setBackgroundColor("white")
+                    .setFontSize("10px")
+                    .setBackgroundColor("#f7f7f7")
+                    .setFontWeight("500");
+
+            lbl.getElement().setAttribute("data-field-name", item.name());
+            DragSource.create(lbl).setDragData(item.name());
+
+            fieldsContainer.add(lbl);
+        }
     }
 
     private String getIconForType(String type) {
         if (type.contains("date")) return "📅";
         if (type.contains("number")) return "#";
+
         return "Aa";
     }
 
     private void doSearch() {
         String keyword = searchField.getValue() != null ? searchField.getValue().toLowerCase().trim() : "";
-        fieldsList.setItems(keyword.isEmpty() ? allFieldItems :
-                allFieldItems.stream().filter(i -> i.name().toLowerCase().contains(keyword)).collect(Collectors.toList()));
+
+        List<FieldItem> filteredItems;
+        if (keyword.isEmpty()) {
+            filteredItems = allFieldItems;
+        } else {
+            filteredItems = allFieldItems.stream()
+                    .filter(i -> i.name().toLowerCase().contains(keyword))
+                    .collect(Collectors.toList());
+        }
+        // [THAY ĐỔI] Render lại danh sách lọc
+        renderFieldsList(filteredItems);
     }
 
+    // ... (Các hàm Action: Preview, Save giữ nguyên) ...
     @Subscribe(id = "previewBtn", subject = "clickListener")
     public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
+        // ... code cũ ...
         ChartConfigFragment frag = getCurrentFragment();
         if (frag == null || !frag.isValid()) {
             notifications.create("Cấu hình chưa hợp lệ").show();
@@ -281,13 +287,14 @@ public class ChartConfigView extends StandardView {
 
     @Subscribe(id = "save", subject = "clickListener")
     public void onSaveClick(final ClickEvent<JmixButton> event) {
+        // ... code cũ ...
         if (chartNameField.isEmpty()) {
             notifications.create("Nhập tên biểu đồ").show();
             return;
         }
 
         ChartConfigFragment fragment = getCurrentFragment();
-        if (!fragment.isValid()) {
+        if (fragment == null || !fragment.isValid()) {
             notifications.create("Cấu hình không hợp lệ").show();
             return;
         }
@@ -300,6 +307,6 @@ public class ChartConfigView extends StandardView {
 
         dataManager.save(config);
         notifications.create("Đã lưu!").show();
-        viewNavigators.view(this, ChartConfigListView.class).navigate(); // Đổi class view list của bạn
+        viewNavigators.view(this, ChartConfigListView.class).navigate();
     }
 }

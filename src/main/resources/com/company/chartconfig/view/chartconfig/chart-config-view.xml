@@ -45,7 +45,8 @@
         <!-- 🔹 MAIN CONTENT -->
         <split id="mainSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="40" themeNames="small">
 
-            <split id="innerSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="45" themeNames="small">
+            <split id="innerSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="45" themeNames="small"
+                   minHeight="100%">
 
                 <!-- 🔸 CỘT 1: Fields List -->
                 <!-- Đã xóa width="100%", giữ height="100%" -->
@@ -59,7 +60,9 @@
                     <textField id="searchField" placeholder="Search" width="100%" css="margin-bottom: 10px;">
                         <prefix><icon icon="SEARCH"/></prefix>
                     </textField>
-                    <listBox id="fieldsList" width="100%" height="100%" classNames="hide-scrollbar"/>
+                    <scroller width="100%" height="100%" classNames="hide-scrollbar">
+                        <vbox id="fieldsContainer" width="100%" spacing="false" padding="false" css="gap: 4px;"/>
+                    </scroller>
                 </vbox>
 
                 <!-- 🔸 MIDDLE PANE (Config) -->
