@@ -29,6 +29,7 @@ import io.jmix.flowui.model.KeyValueCollectionContainer;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Component
@@ -61,54 +62,39 @@ public class LineChartBuilder implements ChartBuilder {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
 
-        // 1. Lấy các giới hạn
-        int rowLimit = settings.getRowLimit();       // Giới hạn số dòng data (Data Points - Trục X)
-        int seriesLimit = settings.getSeriesLimit(); // Giới hạn số lượng Metrics (Lines - Số đường)
+        // 1. Parse config
+        int rowLimit = settings.getRowLimit();
+        int seriesLimit = settings.getSeriesLimit();
 
-        // 2. Parse Metrics & Filters từ JSON
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) {
-            root.path("metrics").forEach(n -> {
-                try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {}
-            });
+            root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
         }
-
         List<FilterRule> filters = new ArrayList<>();
         if (root.path("filters").isArray()) {
-            root.path("filters").forEach(n -> {
-                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
-            });
+            root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
         }
 
-        if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin trục X hoặc Metrics");
+        if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 3. XỬ LÝ SERIES LIMIT (Cắt bớt Metrics TRƯỚC khi tính toán)
+        // 2. SERIES LIMIT (Cắt Metrics)
         dataProcessor.applyMetricLimit(metrics, seriesLimit);
 
-        // 4. Filter & Aggregate
+        // 3. Aggregate
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
         List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 5. Sort theo thời gian (X-Axis ASC) để đường nối liền mạch
-        chartData.sort((o1, o2) -> {
-            Object v1 = o1.getValue(xAxisField);
-            Object v2 = o2.getValue(xAxisField);
-            if (v1 == null) return -1; if (v2 == null) return 1;
-            if (v1 instanceof Comparable && v2 instanceof Comparable) return ((Comparable) v1).compareTo(v2);
-            return v1.toString().compareTo(v2.toString());
-        });
+        // 4. [XỬ LÝ NGÀY THÁNG NGẮN GỌN]
+        if (isDateColumn(chartData, xAxisField)) {
+            chartData.sort(Comparator.comparing(item -> parseDateSortable(item.getValue(xAxisField))));
+        }
 
-        // 6. XỬ LÝ ROW LIMIT (Cắt bớt Data Points)
-        // Lấy N dòng cuối cùng (ví dụ 100 ngày gần nhất)
+        // 5. ROW LIMIT & Contribution
         dataProcessor.applyTailLimit(chartData, rowLimit);
-
-        // 7. Tính % Contribution (Nếu cần - Line Chart thường ít dùng cái này nhưng vẫn support)
         dataProcessor.processContributionOnly(chartData, metrics, settings);
 
-        // --- BUILD CHART UI ---
-
-        // Container
+        // 6. Build UI
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xAxisField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -137,11 +123,9 @@ public class LineChartBuilder implements ChartBuilder {
         );
         chart.setDataSet(dataSet);
 
-        // Config Axes
         chart.addXAxis(new XAxis().withName(xAxisField).withType(AxisType.CATEGORY));
         chart.addYAxis(new YAxis().withType(AxisType.VALUE));
 
-        // Vẽ các Series (Chỉ vẽ những metrics còn lại trong list sau khi đã cắt ở bước 3)
         for (MetricConfig m : metrics) {
             LineSeries s = new LineSeries();
             s.setName(m.getLabel());
@@ -156,5 +140,28 @@ public class LineChartBuilder implements ChartBuilder {
         chart.withTooltip(new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS));
 
         return chart;
+    }
+
+    // Xủ lý date
+    private boolean isDateColumn(List<MapDataItem> data, String field) {
+        if (data == null || data.isEmpty()) return false;
+        Object v = data.get(0).getValue(field);
+        return v != null && v.toString().matches(".*\\d{4}.*[-/.].*");
+    }
+
+    private Comparable parseDateSortable(Object val) {
+        if (val == null) return null;
+        if (val instanceof Comparable && !(val instanceof String)) return (Comparable) val;
+
+        String s = val.toString().trim().split(" ")[0];
+        String clean = s.replace("-", "/").replace(".", "/");
+
+        if (clean.matches("^\\d{4}/.*")) return clean;
+
+        try {
+            return new java.text.SimpleDateFormat("dd/MM/yyyy").parse(clean);
+        } catch (Exception e) {
+            return s;
+        }
     }
 }
