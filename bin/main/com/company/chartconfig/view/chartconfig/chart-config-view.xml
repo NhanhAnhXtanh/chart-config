@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://chartConfigView.title">
+
+    <actions>
+        <action id="closeAction" type="view_close"/>
+    </actions>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <!-- 🔹 GLOBAL LAYOUT -->
+    <layout>
+
+        <!-- 🔹 HEADER -->
+        <vbox width="100%" css="background-color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-shrink: 0;">
+            <hbox spacing="true" css="gap: 10px; align-items: center;">
+                <icon icon="DATABASE" css="color: var(--lumo-primary-color); width: 18px; height: 18px;"/>
+                <nativeLabel text="Dataset:" css="font-weight: 600; color: var(--lumo-secondary-text-color); font-size: 0.9em;"/>
+                <nativeLabel id="datasetNameLabel" css="font-weight: 600; color: var(--lumo-header-text-color); font-size: 1.1em;"/>
+            </hbox>
+        </vbox>
+
+        <!-- 🔹 TOOLBAR -->
+        <hbox width="100%" css="align-items: center; gap: 16px; flex-shrink: 0;">
+            <textField id="chartNameField"
+                       placeholder="Nhập tên biểu đồ..."
+                       height="45px"
+                       css="flex-grow: 1; font-size: 15px;"
+                       helperText="Tên hiển thị trên dashboard">
+                <prefix>
+                    <icon icon="PENCIL" css="width: 18px; height: 18px;"/>
+                </prefix>
+            </textField>
+
+            <button id="save"
+                    text="Lưu cấu hình"
+                    icon="CHECK"
+                    height="45px"
+                    themeNames="primary"
+                    css="border-radius: 8px; padding: 0 32px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
+        </hbox>
+
+        <!-- 🔹 MAIN CONTENT -->
+        <split id="mainSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="40" themeNames="small">
+
+            <split id="innerSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="45" themeNames="small">
+
+                <!-- 🔸 CỘT 1: Fields List -->
+                <!-- Đã xóa width="100%", giữ height="100%" -->
+                <vbox id="leftPane"
+                      height="100%"
+                      classNames="hide-scrollbar"
+                      spacing="false"
+                      css="background-color: #ffffff; padding: 16px; box-sizing: border-box; overflow: hidden;">
+
+                    <!-- (Phần search và listbox giữ nguyên như code trước của bạn) -->
+                    <textField id="searchField" placeholder="Search" width="100%" css="margin-bottom: 10px;">
+                        <prefix><icon icon="SEARCH"/></prefix>
+                    </textField>
+                    <listBox id="fieldsList" width="100%" height="100%" classNames="hide-scrollbar"/>
+                </vbox>
+
+                <!-- 🔸 MIDDLE PANE (Config) -->
+                <vbox id="middlePane"
+                      height="100%"
+                      spacing="false"
+                      css="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 20px; border: 1px solid rgba(0,0,0,0.05); margin: 0 6px; box-sizing: border-box;">
+
+                    <!-- CONFIG HEADER -->
+                    <hbox width="100%" css="align-items: center; justify-content: space-between; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0;">
+                        <hbox css="align-items: center; gap: 8px;">
+                            <icon icon="COG" css="color: var(--lumo-secondary-text-color);"/>
+                            <nativeLabel text="Cấu hình trục" css="font-weight: 700; color: var(--lumo-header-text-color); font-size: 16px;"/>
+                        </hbox>
+                    </hbox>
+
+                    <hbox>
+                        <tabs id="chartTypeTabs" themeNames="centered minimal small"/>
+                    </hbox>
+                    <!-- Fragment Container -->
+                    <vbox id="fragmentContainer" width="100%" spacing="false" padding="false" css="flex-grow: 1; overflow-y: auto;"/>
+
+                    <vbox width="100%" css="gap: 10px; margin-top: auto; padding-top: 20px; border-top: 1px solid var(--lumo-contrast-10pct); flex-shrink: 0;">
+                        <button id="previewBtn" text="Xem trước" width="100%" themeNames="primary outlined"/>
+                        <button id="closeBtn" action="closeAction" text="Hủy bỏ" width="100%" themeNames="tertiary error"/>
+                    </vbox>
+                </vbox>
+            </split>
+
+            <!-- 🔸 RIGHT PANE (Preview) -->
+            <vbox id="rightPane" height="100%" spacing="false" css="background-color: #ffffff; border-radius: 12px; padding: 24px; margin-left: 6px;">
+                <nativeLabel text="Biểu đồ hiển thị" css="font-weight: 700; font-size: 18px; margin-bottom: 20px;"/>
+                <vbox id="chartContainer" width="100%" height="100%" css="background-color: #fafafa; border: 1px dashed #d0d0d0;"/>
+            </vbox>
+
+        </split>
+    </layout>
+</view>

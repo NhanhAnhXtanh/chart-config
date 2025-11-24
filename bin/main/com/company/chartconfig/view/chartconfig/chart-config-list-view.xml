@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      xmlns:c="http://jmix.io/schema/flowui/jpql-condition"
+      title="msg://chartConfigListView.title"
+      focusComponent="chartConfigsDataGrid">
+
+    <data>
+        <collection id="chartConfigsDc"
+                    class="com.company.chartconfig.entity.ChartConfig">
+            <fetchPlan extends="_base">
+                <property name="dataset" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="chartConfigsDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from ChartConfig e]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+
+    <layout>
+        <genericFilter id="genericFilter"
+                       dataLoader="chartConfigsDl">
+            <properties include=".*"/>
+        </genericFilter>
+
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <startSlot>
+                <button id="createButton" action="chartConfigsDataGrid.createAction"/>
+                <button id="editButton" action="chartConfigsDataGrid.editAction"/>
+                <button id="removeButton" action="chartConfigsDataGrid.removeAction"/>
+            </startSlot>
+            <endSlot>
+                <simplePagination id="pagination" dataLoader="chartConfigsDl"/>
+            </endSlot>
+        </hbox>
+
+        <dataGrid id="chartConfigsDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="chartConfigsDc"
+                  columnReorderingAllowed="true">
+            <actions>
+                <!-- create/edit là custom action, remove vẫn dùng list_remove -->
+                <action id="createAction" text="Create"/>
+                <action id="editAction" text="Edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name"/>
+                <column property="chartType"/>
+                <column property="dataset"/>
+                <column property="settingsJson"/>
+            </columns>
+        </dataGrid>
+
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

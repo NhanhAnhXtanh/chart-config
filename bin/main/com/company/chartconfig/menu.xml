@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<menu-config xmlns="http://jmix.io/schema/flowui/menu">
+
+    <menu id="application" title="msg://com.company.chartconfig/menu.application.title" opened="true">
+        <item view="Dataset.list" title="msg://com.company.chartconfig.view.dataset/datasetListView.title"/>
+        <item view="ChartConfig.list" title="msg://com.company.chartconfig.view.chartconfig/chartConfigListView.title"/>
+    </menu>
+
+</menu-config>

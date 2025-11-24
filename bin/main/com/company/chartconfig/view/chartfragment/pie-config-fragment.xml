@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fragment xmlns="http://jmix.io/schema/flowui/fragment">
+    <!-- DATA CONTAINER ẢO -->
+    <data>
+        <keyValueInstance id="pieSettingsDc" class="io.jmix.core.entity.KeyValueEntity">
+            <properties>
+                <property name="dimension" datatype="string"/>
+                <property name="isDonut" datatype="boolean"/>
+                <property name="seriesLimit" datatype="int"/>
+            </properties>
+        </keyValueInstance>
+    </data>
+
+    <content>
+        <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
+
+            <!-- SECTION 1: DIMENSION (DropZone) -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Dimension" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="dimensionDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 2: METRIC (DropZone) -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Metric" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="metricDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 3: FILTERS (DropZone) -->
+            <vbox spacing="false" padding="false" css="gap: 4px;">
+                <span text="Filters" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <div id="filtersDrop" classNames="chart-drop-zone"/>
+            </vbox>
+
+            <!-- SECTION 4: OPTIONS (BINDING) -->
+            <details summaryText="Options" themeNames="small" opened="true">
+                <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+
+                    <!-- Bind: Donut -->
+                    <checkbox id="donutCheckbox"
+                              label="Donut Chart"
+                              dataContainer="pieSettingsDc"
+                              property="isDonut"/>
+
+                    <!-- Bind: Limit -->
+                    <vbox spacing="false" padding="false" css="gap: 4px;">
+                        <hbox css="align-items: center; gap: 6px;">
+                            <span text="Row Limit" css="font-weight: 600; font-size: 13px; color: #555;"/>
+                        </hbox>
+                        <comboBox id="seriesLimitField"
+                                  width="100%"
+                                  allowCustomValue="true"
+                                  dataContainer="pieSettingsDc"
+                                  property="seriesLimit"/>
+                    </vbox>
+                </vbox>
+            </details>
+
+        </vbox>
+    </content>
+</fragment>
