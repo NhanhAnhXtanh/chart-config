@@ -175,8 +175,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         node.put("xAxisSortBy", (String) entity.getValue("xAxisSortBy"));
         node.put("xAxisSortAsc", (Boolean) entity.getValue("xAxisSortAsc"));
         node.put("querySortDesc", (Boolean) entity.getValue("querySortDesc"));
-        // Map seriesLimit UI -> rowLimit JSON
-        node.put("rowLimit", (Integer) entity.getValue("seriesLimit"));
+        node.put("seriesLimit", (Integer) entity.getValue("seriesLimit"));
 
         // 2. Lấy từ Container (Enum -> ID String)
         TimeGrain grain = timeGrainField.getValue();
@@ -207,9 +206,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         entity.setValue("xAxisSortBy", node.path("xAxisSortBy").asText(null));
         entity.setValue("xAxisSortAsc", node.path("xAxisSortAsc").asBoolean(true));
         entity.setValue("querySortDesc", node.path("querySortDesc").asBoolean(true));
-
-        // Map JSON rowLimit -> UI seriesLimit
-        entity.setValue("seriesLimit", node.path("rowLimit").asInt(0));
+        entity.setValue("seriesLimit", node.path("seriesLimit").asInt(ChartConstants.DEFAULT_LIMIT_VALUE));
 
         // 2. Set vào Container (ID String -> Enum Object)
         String grainId = node.path("timeGrain").asText(null);

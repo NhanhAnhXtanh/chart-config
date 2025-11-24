@@ -63,6 +63,10 @@ public class BarChartBuilder implements ChartBuilder {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xField = settings.getXAxisField();
 
+        // Lấy giới hạn
+        int rowLimit = settings.getRowLimit();       // Giới hạn số dòng (Top N Products)
+        int seriesLimit = settings.getSeriesLimit(); // Giới hạn số lượng Metrics (Columns)
+
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
 
@@ -71,16 +75,18 @@ public class BarChartBuilder implements ChartBuilder {
 
         if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin trục X hoặc Metrics");
 
-        // 2. PIPELINE: Filter -> Aggregate (Query Sort) -> Process (Limit/Top N)
-        // Lưu ý: Query Sort đã được xử lý bên trong aggregator rồi (để lấy đúng Top N)
+        // -----------------------------------------------------------
+        // 2. XỬ LÝ SERIES LIMIT (Cắt bớt Metrics TRƯỚC khi tính toán)
+        // -----------------------------------------------------------
+        dataProcessor.applyMetricLimit(metrics, seriesLimit);
+
+        // 3. PIPELINE: Filter -> Aggregate
+        // (Chỉ tính toán cho các metrics còn lại trong list)
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
         List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        dataProcessor.process(chartData, metrics, settings);
-
-        // 3. VISUAL SORT (X-AXIS SORT)
-        // Sắp xếp lại thứ tự hiển thị sau khi đã lấy được dữ liệu
+        // 4. SORTING (Quan trọng: Sort trước khi cắt Row Limit để lấy đúng Top N)
         String xAxisSortBy = settings.getXAxisSortBy();
         if (xAxisSortBy != null && !xAxisSortBy.isEmpty()) {
             boolean isMetric = metrics.stream().anyMatch(m -> m.getLabel().equals(xAxisSortBy));
@@ -99,13 +105,23 @@ public class BarChartBuilder implements ChartBuilder {
                 }));
             }
 
-            // Đảo ngược nếu không phải Ascending
+            // Đảo ngược nếu không phải Ascending (Mặc định Comparator là ASC)
             if (!settings.isXAxisSortAsc()) {
                 Collections.reverse(chartData);
             }
         }
 
-        // 4. Create Container
+        // 5. XỬ LÝ ROW LIMIT (Cắt bớt Dữ liệu - HEAD LIMIT)
+        // Với Bar Chart, ta lấy N phần tử đầu tiên (Top N)
+        dataProcessor.applyHeadLimit(chartData, rowLimit);
+
+        // 6. Tính % Contribution (Chỉ tính trên data đã lọc và giới hạn)
+        dataProcessor.processContributionOnly(chartData, metrics, settings);
+
+
+        // --- 7. BUILD CHART UI ---
+
+        // Create Container
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -119,7 +135,7 @@ public class BarChartBuilder implements ChartBuilder {
         }
         container.setItems(entities);
 
-        // 5. Config Chart UI
+        // Config Chart
         Chart chart = uiComponents.create(Chart.class);
         chart.setWidth("100%"); chart.setHeight("100%");
 
@@ -133,25 +149,16 @@ public class BarChartBuilder implements ChartBuilder {
         chart.setDataSet(dataSet);
 
         // --- X-AXIS CONFIG ---
-        // --- X-AXIS CONFIG ---
         XAxis xAxis = new XAxis().withName(xField);
 
         // Quyết định kiểu trục
         if (settings.isForceCategorical()) {
             xAxis.withType(AxisType.CATEGORY);
         }
-
         AxisLabel xAxisLabel = new AxisLabel();
         xAxisLabel.setFontSize(10);
-
-        xAxisLabel.setInterval(0); // 0 nghĩa là hiện tất cả, không ẩn nhãn nào
-
-        xAxisLabel.setFormatterFunction(
-                "function(value) { " +
-                        "   return value;" + // <--- Trả về chính xác 100% giá trị
-                        "}"
-        );
-
+        xAxisLabel.setInterval(0);
+        xAxisLabel.setFormatterFunction("function(value) { return value; }");
         xAxis.setAxisLabel(xAxisLabel);
         chart.addXAxis(xAxis);
 
@@ -163,7 +170,6 @@ public class BarChartBuilder implements ChartBuilder {
             yAxisLabel.setFormatter("{value} %");
             if (settings.getContributionMode() == ContributionMode.ROW) yAxis.setMax("100");
         } else {
-            // Format số lớn (1k, 1M, 1B)
             yAxisLabel.setFormatterFunction(
                     "function(value) { " +
                             "   if (Math.abs(value) >= 1000) {" +

@@ -91,4 +91,11 @@ public class ChartDataProcessor {
         try { if (v != null) return Double.parseDouble(v.toString()); } catch (Exception e) {}
         return 0.0;
     }
+
+    // Xử lý cắt Metric (Series Limit)
+    public void applyMetricLimit(List<MetricConfig> metrics, int limit) {
+        if (limit > 0 && metrics.size() > limit) {
+            metrics.subList(limit, metrics.size()).clear();
+        }
+    }
 }
