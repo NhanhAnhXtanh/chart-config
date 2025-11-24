@@ -72,7 +72,9 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
         if (xDrop != null) {
             DropZoneUtils.updateVisuals(xDrop, xAxis, v -> {
                 this.xAxis = v;
-                lineSettingsDc.getItem().setValue("xAxis", v);
+                if (lineSettingsDc.getItemOrNull() != null) {
+                    lineSettingsDc.getItem().setValue("xAxis", v);
+                }
             });
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {
             });

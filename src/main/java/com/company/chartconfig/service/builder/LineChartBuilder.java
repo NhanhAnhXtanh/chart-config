@@ -4,6 +4,7 @@ import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.model.ChartCommonSettings;
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
+import com.company.chartconfig.service.processor.ChartDataProcessor;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,149 +39,92 @@ public class LineChartBuilder implements ChartBuilder {
     private final DataComponents dataComponents;
     private final ChartDataAggregator aggregator;
     private final ChartDataFilter dataFilter;
+    private final ChartDataProcessor dataProcessor;
 
     public LineChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
-                            ChartDataAggregator aggregator, ChartDataFilter dataFilter) {
+                            ChartDataAggregator aggregator, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
         this.dataComponents = dataComponents;
         this.aggregator = aggregator;
         this.dataFilter = dataFilter;
+        this.dataProcessor = dataProcessor;
     }
 
     @Override
-    public boolean supports(ChartType type) {
-        return type == ChartType.LINE;
-    }
+    public boolean supports(ChartType type) { return type == ChartType.LINE; }
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
-        // 1. Parse Config
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
-
-        // [FIX 1] Đọc Row Limit từ JSON
-        int rowLimit = root.path("rowLimit").asInt(0);
+        int rowLimit = settings.getRowLimit();
 
         List<MetricConfig> metrics = new ArrayList<>();
-        if (root.path("metrics").isArray()) {
-            root.path("metrics").forEach(n -> {
-                try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {}
-            });
-        }
-
+        if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
         List<FilterRule> filters = new ArrayList<>();
-        if (root.path("filters").isArray()) {
-            root.path("filters").forEach(n -> {
-                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
-            });
-        }
+        if (root.path("filters").isArray()) root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
 
-        if (xAxisField == null || metrics.isEmpty()) {
-            throw new IllegalStateException("Line Chart requires X-Axis and at least one Metric");
-        }
+        if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 2. Process Data
-        // 2.1 Filter
+        // 1. Aggregate
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
+        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
+        if (chartData == null) chartData = new ArrayList<>();
 
-        // 2.2 Aggregate
-        List<MapDataItem> chartData = aggregator.aggregate(rawData, metrics, settings);
-
-        // 2.3 [QUAN TRỌNG] SORT BY X-AXIS ASCENDING
+        // 2. Sort Time (ASC)
         chartData.sort((o1, o2) -> {
             Object v1 = o1.getValue(xAxisField);
             Object v2 = o2.getValue(xAxisField);
-
-            if (v1 == null && v2 == null) return 0;
-            if (v1 == null) return -1;
-            if (v2 == null) return 1;
-
-            if (v1 instanceof Comparable && v2 instanceof Comparable) {
-                return ((Comparable) v1).compareTo(v2);
-            }
+            if (v1 == null) return -1; if (v2 == null) return 1;
+            if (v1 instanceof Comparable && v2 instanceof Comparable) return ((Comparable) v1).compareTo(v2);
             return v1.toString().compareTo(v2.toString());
         });
 
-        // [FIX 2] Xử lý Row Limit (Thủ công)
-        // Logic: Nếu dữ liệu > limit, lấy N dòng CUỐI CÙNG (tương ứng với dữ liệu mới nhất theo thời gian)
-        if (rowLimit > 0 && chartData.size() > rowLimit) {
-            int fromIndex = chartData.size() - rowLimit;
-            // Wrap lại thành ArrayList mới để đảm bảo tính mutable nếu cần
-            chartData = new ArrayList<>(chartData.subList(fromIndex, chartData.size()));
-        }
+        // 3. Row Limit (Tail)
+        dataProcessor.applyTailLimit(chartData, rowLimit);
 
-        // 3. Build UI Container
+        // 4. Contribution
+        dataProcessor.processContributionOnly(chartData, metrics, settings);
+
+        // Container
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
-
         container.addProperty(xAxisField, String.class);
-        for (MetricConfig m : metrics) {
-            container.addProperty(m.getLabel(), Double.class);
-        }
-
+        for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
         List<KeyValueEntity> entities = new ArrayList<>();
         for (MapDataItem item : chartData) {
             KeyValueEntity kv = new KeyValueEntity();
-
-            // Set X-Axis Value
-            Object xVal = item.getValue(xAxisField);
-            kv.setValue(xAxisField, xVal != null ? xVal.toString() : "Unknown");
-
-            // Set Metric Values
+            kv.setValue(xAxisField, item.getValue(xAxisField) != null ? item.getValue(xAxisField).toString() : "Unknown");
             for (MetricConfig m : metrics) {
-                Object mVal = item.getValue(m.getLabel());
-                Double valDbl = (mVal instanceof Number) ? ((Number) mVal).doubleValue() : 0.0;
-                kv.setValue(m.getLabel(), valDbl);
+                Object v = item.getValue(m.getLabel());
+                kv.setValue(m.getLabel(), v instanceof Number ? ((Number) v).doubleValue() : 0.0);
             }
-
             entities.add(kv);
         }
         container.setItems(entities);
 
-        // 4. Create Chart
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%");
-        chart.setHeight("100%");
-
-        // --- DATASET ---
-        String[] valueFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
-
-        DataSet dataSet = new DataSet().withSource(
-                new DataSet.Source<EntityDataItem>()
-                        .withDataProvider(new ContainerChartItems<>(container))
-                        .withCategoryField(xAxisField)
-                        .withValueFields(valueFields)
-        );
+        chart.setWidth("100%"); chart.setHeight("100%");
+        String[] valFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
+        DataSet dataSet = new DataSet().withSource(new DataSet.Source<EntityDataItem>().withDataProvider(new ContainerChartItems<>(container)).withCategoryField(xAxisField).withValueFields(valFields));
         chart.setDataSet(dataSet);
 
-        // --- AXES ---
+        // Config Chart (Basic - No Formatter)
         chart.addXAxis(new XAxis().withName(xAxisField).withType(AxisType.CATEGORY));
         chart.addYAxis(new YAxis().withType(AxisType.VALUE));
 
-        // --- SERIES ---
         for (MetricConfig m : metrics) {
-            LineSeries series = new LineSeries();
-            series.setName(m.getLabel());
-            // series.setSmooth(true);
-
+            LineSeries s = new LineSeries();
+            s.setName(m.getLabel());
+            s.setSmooth(0.5);
             Encode encode = new Encode();
             encode.setX(xAxisField);
             encode.setY(m.getLabel());
-            series.setEncode(encode);
-
-            chart.addSeries(series);
+            s.setEncode(encode);
+            chart.addSeries(s);
         }
-
-        // --- LEGEND ---
-        Legend legend = new Legend();
-        legend.setShow(true);
-        legend.setBottom("0");
-        chart.withLegend(legend);
-
-        // --- TOOLTIP ---
-        Tooltip tooltip = new Tooltip();
-        tooltip.setTrigger(AbstractTooltip.Trigger.AXIS);
-        chart.withTooltip(tooltip);
+        chart.withLegend(new Legend());
+        chart.withTooltip(new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS));
 
         return chart;
     }

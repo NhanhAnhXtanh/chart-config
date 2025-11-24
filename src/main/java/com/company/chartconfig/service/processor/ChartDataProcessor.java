@@ -7,47 +7,66 @@ import com.company.chartconfig.view.common.MetricConfig;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Component
 public class ChartDataProcessor {
 
     /**
-     * Xử lý hậu kỳ dữ liệu: Tính % -> Sắp xếp -> Cắt Limit
+     * Xử lý FULL: Row Limit -> Series Limit -> Contribution
      */
     public void process(List<MapDataItem> data, List<MetricConfig> metrics, ChartCommonSettings settings) {
         if (data == null || data.isEmpty() || metrics.isEmpty()) return;
 
-        // 1. Xử lý Contribution (Phần trăm)
-        applyContribution(data, metrics, settings.getContributionMode());
-
-        int limit = settings.getSeriesLimit();
-
-        // Nếu limit > 0 và nhỏ hơn kích thước data thì mới cắt
-        if (limit > ChartConstants.LIMIT_NONE && data.size() > limit) {
-            applyLimit(data, metrics, limit);
+        // 1. Row Limit (Cắt đuôi)
+        int rowLimit = settings.getRowLimit();
+        if (rowLimit > ChartConstants.LIMIT_NONE) {
+            applyTailLimit(data, rowLimit);
         }
-    }
 
-    // --- LOGIC LIMIT ---
-    private void applyLimit(List<MapDataItem> data, List<MetricConfig> metrics, int limit) {
-        // 1. Sort DESC theo Metric chính
-        if (!metrics.isEmpty()) {
+        // 2. Series Limit (Cắt đầu - Top N)
+        int seriesLimit = settings.getSeriesLimit();
+        if (seriesLimit > ChartConstants.LIMIT_NONE) {
+            // Sort DESC để lấy Top N
             String sortKey = metrics.get(0).getLabel();
             data.sort((o1, o2) -> {
                 double v1 = getDouble(o1, sortKey);
                 double v2 = getDouble(o2, sortKey);
                 return Double.compare(v2, v1);
             });
+            applyHeadLimit(data, seriesLimit);
         }
 
-        // 2. Cut list (Hiệu năng cao)
-        data.subList(limit, data.size()).clear();
+        // 3. Tính %
+        applyContribution(data, metrics, settings.getContributionMode());
     }
 
+    /**
+     * [FIX] Thêm hàm này để LineChartBuilder gọi được
+     * Chỉ tính toán %, không cắt gọt dữ liệu
+     */
+    public void processContributionOnly(List<MapDataItem> data, List<MetricConfig> metrics, ChartCommonSettings settings) {
+        if (data == null || data.isEmpty() || metrics.isEmpty()) return;
+        applyContribution(data, metrics, settings.getContributionMode());
+    }
 
-    // --- LOGIC CONTRIBUTION ---
+    // --- LIMIT UTILS ---
+
+    public void applyHeadLimit(List<MapDataItem> data, int limit) {
+        if (limit > 0 && data.size() > limit) {
+            data.subList(limit, data.size()).clear();
+        }
+    }
+
+    public void applyTailLimit(List<MapDataItem> data, int limit) {
+        if (limit > 0 && data.size() > limit) {
+            int cutPoint = data.size() - limit;
+            data.subList(0, cutPoint).clear();
+        }
+    }
+
+    // --- INTERNAL LOGIC ---
+
     private void applyContribution(List<MapDataItem> data, List<MetricConfig> metrics, ContributionMode mode) {
         if (mode == ContributionMode.SERIES) {
             for (MetricConfig m : metrics) {
@@ -60,9 +79,7 @@ public class ChartDataProcessor {
                 double rowTotal = 0;
                 for (MetricConfig m : metrics) rowTotal += getDouble(item, m.getLabel());
                 if (rowTotal != 0) {
-                    for (MetricConfig m : metrics) {
-                        item.add(m.getLabel(), (getDouble(item, m.getLabel()) / rowTotal) * 100);
-                    }
+                    for (MetricConfig m : metrics) item.add(m.getLabel(), (getDouble(item, m.getLabel()) / rowTotal) * 100);
                 }
             }
         }
