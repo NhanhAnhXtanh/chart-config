@@ -49,111 +49,73 @@ public class PieChartBuilder implements ChartBuilder {
     }
 
     @Override
-    public boolean supports(ChartType type) {
-        return type == ChartType.PIE;
-    }
+    public boolean supports(ChartType type) { return type == ChartType.PIE; }
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
-        // 1. Parse Config
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String dimension = settings.getDimensionField();
+        int limit = settings.getSeriesLimit(); // [PIE] Dùng Series Limit (Top N)
 
         List<MetricConfig> metrics = new ArrayList<>();
-        if (root.path("metrics").isArray()) {
-            root.path("metrics").forEach(n -> {
-                try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {}
-            });
-        }
-
+        if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
         List<FilterRule> filters = new ArrayList<>();
-        if (root.path("filters").isArray()) {
-            root.path("filters").forEach(n -> {
-                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
-            });
-        }
+        if (root.path("filters").isArray()) root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
 
-        if (dimension == null || metrics.isEmpty()) {
-            throw new IllegalStateException("Pie Chart yêu cầu Dimension và Metric");
-        }
-
+        if (dimension == null || metrics.isEmpty()) throw new IllegalStateException("Pie Chart thiếu dữ liệu");
         MetricConfig metric = metrics.get(0);
-        String metricLabel = metric.getLabel();
 
-        // 2. Process Data
+        // 1. Aggregate
         List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(rawData, metrics, settings);
-        dataProcessor.process(chartData, metrics, settings);
+        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
+        if (chartData == null) chartData = new ArrayList<>();
 
-        // 3. Build UI Container
+        // Sort Value DESC để lấy Top N
+        String key = metric.getLabel();
+        chartData.sort((o1, o2) -> Double.compare(getDouble(o2, key), getDouble(o1, key)));
+
+        // 2. Limit
+        dataProcessor.applyHeadLimit(chartData, limit);
+
+        // 3. Contribution
+        dataProcessor.processContributionOnly(chartData, metrics, settings);
+
+        // 4. Container & Chart
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
-        // Đặt tên field là "amount" để không trùng keyword "value"
         container.addProperty("key", String.class);
         container.addProperty("amount", Double.class);
-
         List<KeyValueEntity> entities = new ArrayList<>();
+        String metricLabel = metric.getLabel();
         for (MapDataItem item : chartData) {
             KeyValueEntity kv = new KeyValueEntity();
             Object dimVal = item.getValue(dimension);
             Object metVal = item.getValue(metricLabel);
-
-            String keyStr = (dimVal != null) ? dimVal.toString() : "N/A";
-            Double valDbl = (metVal instanceof Number) ? ((Number) metVal).doubleValue() : 0.0;
-
-            kv.setValue("key", keyStr);
-            kv.setValue("amount", valDbl); // Set vào amount
-
+            kv.setValue("key", (dimVal != null) ? dimVal.toString() : "N/A");
+            kv.setValue("amount", (metVal instanceof Number) ? ((Number) metVal).doubleValue() : 0.0);
             entities.add(kv);
         }
         container.setItems(entities);
 
-        // 4. Create Chart
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%");
-        chart.setHeight("100%");
-
-        // --- DATASET ---
-        DataSet dataSet = new DataSet().withSource(
-                new DataSet.Source<EntityDataItem>()
-                        .withDataProvider(new ContainerChartItems<>(container))
-                        .withCategoryField("key")
-                        .withValueFields("amount") // Map cột amount
-        );
+        chart.setWidth("100%"); chart.setHeight("100%");
+        DataSet dataSet = new DataSet().withSource(new DataSet.Source<EntityDataItem>().withDataProvider(new ContainerChartItems<>(container)).withCategoryField("key").withValueFields("amount"));
         chart.setDataSet(dataSet);
 
-        // --- SERIES ---
         PieSeries series = new PieSeries();
         series.setName(dimension);
-
-        // --- LABEL ---
-        Label label = new Label();
-        label.setShow(true);
-        label.setFormatter("{b}: {d}%");
-        series.setLabel(label);
-
-        // Radius
-        if (settings.isDonut()) {
-            series.setRadius("50%", "70%");
-        } else {
-            series.setRadius("0%", "70%");
-        }
+        Label label = new Label(); label.setShow(true); label.setFormatter("{b}: {d}%"); series.setLabel(label);
+        if (settings.isDonut()) series.setRadius("50%", "70%"); else series.setRadius("0%", "70%");
         chart.addSeries(series);
 
-        // --- LEGEND ---
-        Legend legend = new Legend();
-        legend.setShow(true);
-        legend.setOrientation(Orientation.HORIZONTAL);
-        legend.setTop("0");
-        legend.setLeft("center");
-        chart.withLegend(legend);
-
-        // --- TOOLTIP ---
-        Tooltip tooltip = new Tooltip();
-
-        tooltip.setFormatter("{b}");
-
-        chart.withTooltip(tooltip);
+        Legend legend = new Legend(); legend.setShow(true); legend.setOrientation(Orientation.HORIZONTAL); legend.setTop("0"); legend.setLeft("center"); chart.withLegend(legend);
+        Tooltip tooltip = new Tooltip(); tooltip.setFormatter("{b}: {c} ({d}%)"); chart.withTooltip(tooltip);
 
         return chart;
+    }
+
+    private double getDouble(MapDataItem item, String col) {
+        Object v = item.getValue(col);
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        return 0.0;
     }
 }
