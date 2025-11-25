@@ -4,7 +4,15 @@
         <keyValueInstance id="lineSettingsDc">
             <properties>
                 <property name="xAxis" datatype="string"/>
-                <!-- KHAI BÁO CẢ 2 LIMIT -->
+
+                <property name="forceCategorical" datatype="boolean"/>
+                <property name="xAxisSortBy" datatype="string"/>
+                <property name="xAxisSortAsc" datatype="boolean"/>
+                <property name="timeGrain" datatype="string"/>
+
+                <!-- ============================== -->
+                <!-- Đã sửa dòng này (thay - bằng =) -->
+
                 <property name="seriesLimit" datatype="int"/>
                 <property name="rowLimit" datatype="int"/>
             </properties>
@@ -13,34 +21,91 @@
 
     <content>
         <vbox id="root" width="100%" spacing="false" padding="false" css="gap: 12px;">
-            <!-- 1. X-AXIS -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
-                <span text="X-axis" css="font-weight: 600; font-size: 13px; color: #333;"/>
+                <hbox spacing="false" padding="false">
+                    <span text="X-Axis" css="font-weight: 600; font-size: 14px;"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
+                        <tooltip text="Dimension to use on x-axis." position="TOP"/>
+                    </button>
+                </hbox>
                 <div id="xDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 2. METRICS -->
+            <hbox spacing="false" padding="false">
+                <checkbox id="forceCategoricalField"
+                          label="Force categorical"
+                          visible="false"
+                          css="margin-top: 4px;"
+                          dataContainer="lineSettingsDc"
+                          property="forceCategorical"/>
+            </hbox>
+
+            <vbox id="xAxisSortBox" width="100%" spacing="false" padding="false" css="gap: 4px; margin-top: 5px; margin-bottom: 10px;" visible="false">
+                <hbox spacing="false" padding="false">
+                    <span text="X-Axis Sort By" css="font-weight: 600; font-size: 14px; color: #555;"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
+                        <tooltip text="Decides which measure to sort the base axis by." position="TOP"/>
+                    </button>
+                </hbox>
+
+                <comboBox id="xAxisSortByField"
+                          width="100%"
+                          placeholder="Category name..."
+                          dataContainer="lineSettingsDc"
+                          property="xAxisSortBy"/>
+
+                <hbox spacing="false" padding="false">
+                    <checkbox id="xAxisSortAscField"
+                              label="X-Axis Sort Ascending"
+                              dataContainer="lineSettingsDc"
+                              property="xAxisSortAsc"/>
+
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
+                        <tooltip text="Whether to sort ascending or descending on the base Axis." position="TOP"/>
+                    </button>
+                </hbox>
+            </vbox>
+
+            <vbox id="timeGrainBox" width="100%" spacing="false" css="gap: 4px;" visible="false">
+                <hbox spacing="false" padding="false" css="align-items: center; gap: 6px;">
+                    <span text="Time Grain" css="font-weight: 600; font-size: 14px;"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color:#999; width:16px; height:16px; padding:0;">
+                        <tooltip text="Group data by time interval" position="TOP"/>
+                    </button>
+                </hbox>
+                <comboBox id="timeGrainField"
+                          width="100%"
+                          itemsEnum="com.company.chartconfig.enums.TimeGrain"/>
+            </vbox>
+
             <vbox spacing="false" padding="false" css="gap: 4px;">
                 <span text="Metrics" css="font-weight: 600; font-size: 13px; color: #333;"/>
                 <div id="metricsDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 3. DIMENSIONS -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
                 <span text="Dimensions" css="font-weight: 600; font-size: 13px; color: #333;"/>
                 <div id="dimensionsDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 4. FILTERS -->
             <vbox spacing="false" padding="false" css="gap: 4px;">
                 <span text="Filters" css="font-weight: 600; font-size: 13px; color: #333;"/>
                 <div id="filtersDrop" classNames="chart-drop-zone"/>
             </vbox>
 
-            <!-- 5. LIMITS (CÓ CẢ 2) -->
-            <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
+            <vbox width="100%" spacing="false" padding="false" css="gap: 6px;">
+                <hbox  spacing="false" padding="false" css="align-items: center; gap: 6px;">
+                    <span text="Contribution Mode" css="font-weight: 600; font-size: 14px; color: #333;"/>
+                    <button icon="INFO_CIRCLE_O" themeNames="icon tertiary inline" css="color: #999; width: 16px; height: 16px; padding: 0;">
+                        <tooltip text="Calculate contribution per series or row" position="END_TOP"/>
+                    </button>
+                </hbox>
+                <comboBox id="contributionModeField"
+                          width="100%"
+                          itemsEnum="com.company.chartconfig.enums.ContributionMode"/>
+            </vbox>
 
-                <!-- Series Limit -->
+            <vbox spacing="false" padding="false" css="gap: 12px; padding-top: 8px;">
                 <vbox spacing="false" padding="false" css="gap: 4px;">
                     <span text="Series Limit (Top items)" css="font-weight: 600; font-size: 13px; color: #555;"/>
                     <comboBox id="seriesLimitField"
@@ -50,7 +115,6 @@
                               property="seriesLimit"/>
                 </vbox>
 
-                <!-- Row Limit -->
                 <vbox spacing="false" padding="false" css="gap: 4px;">
                     <span text="Row Limit (Last N points)" css="font-weight: 600; font-size: 13px; color: #555;"/>
                     <comboBox id="rowLimitField"
