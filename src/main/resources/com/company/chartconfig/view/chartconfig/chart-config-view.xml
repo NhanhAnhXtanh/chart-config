@@ -15,32 +15,30 @@
 
         <!-- 🔹 HEADER -->
         <vbox width="100%" css="background-color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-shrink: 0;">
-            <hbox spacing="true" css="gap: 10px; align-items: center;">
-                <icon icon="DATABASE" css="color: var(--lumo-primary-color); width: 18px; height: 18px;"/>
-                <nativeLabel text="Dataset:" css="font-weight: 600; color: var(--lumo-secondary-text-color); font-size: 0.9em;"/>
-                <nativeLabel id="datasetNameLabel" css="font-weight: 600; color: var(--lumo-header-text-color); font-size: 1.1em;"/>
+            <hbox spacing="true" css="gap: 10px; align-items: center;" width="100%">
+                <icon icon="DATABASE" css="color: var(--lumo-primary-color);"/>
+                <nativeLabel text="Dataset:" css="font-weight: 600; color: var(--lumo-secondary-text-color);"/>
+                <nativeLabel id="datasetNameLabel" css="font-weight: 600; color: var(--lumo-header-text-color);"/>
+
+                <!-- 🔹 TOOLBAR -->
+                <textField id="chartNameField"
+                           placeholder="Nhập tên biểu đồ..."
+                           css="flex-grow: 1; font-size: 15px;"
+                width="75%">
+                    <prefix>
+                        <icon icon="PENCIL" css="width: 18px; height: 18px;"/>
+                    </prefix>
+                </textField>
+
+                <button id="save"
+                        text="Lưu cấu hình"
+                        icon="CHECK"
+                        themeNames="primary"
+                        width="15%"
+                        css="border-radius: 8px; padding: 0 32px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
+
             </hbox>
         </vbox>
-
-        <!-- 🔹 TOOLBAR -->
-        <hbox width="100%" css="align-items: center; gap: 16px; flex-shrink: 0;">
-            <textField id="chartNameField"
-                       placeholder="Nhập tên biểu đồ..."
-                       height="45px"
-                       css="flex-grow: 1; font-size: 15px;"
-                       helperText="Tên hiển thị trên dashboard">
-                <prefix>
-                    <icon icon="PENCIL" css="width: 18px; height: 18px;"/>
-                </prefix>
-            </textField>
-
-            <button id="save"
-                    text="Lưu cấu hình"
-                    icon="CHECK"
-                    height="45px"
-                    themeNames="primary"
-                    css="border-radius: 8px; padding: 0 32px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 6px rgba(var(--lumo-primary-color-rgb), 0.3); flex-shrink: 0;"/>
-        </hbox>
 
         <!-- 🔹 MAIN CONTENT -->
         <split id="mainSplit" width="100%" height="100%" orientation="HORIZONTAL" splitterPosition="40" themeNames="small">
