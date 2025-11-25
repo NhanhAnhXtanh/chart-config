@@ -2,8 +2,6 @@ package com.company.chartconfig.service.builder;
 
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.model.ChartCommonSettings;
-import com.company.chartconfig.service.aggregator.ChartDataAggregator;
-import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
@@ -40,17 +38,13 @@ public class AreaChartBuilder implements ChartBuilder {
     private final UiComponents uiComponents;
     private final ObjectMapper objectMapper;
     private final DataComponents dataComponents;
-    private final ChartDataAggregator aggregator;
-    private final ChartDataFilter dataFilter;
     private final ChartDataProcessor dataProcessor;
 
     public AreaChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
-                            ChartDataAggregator aggregator, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
+                            ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
         this.dataComponents = dataComponents;
-        this.aggregator = aggregator;
-        this.dataFilter = dataFilter;
         this.dataProcessor = dataProcessor;
     }
 
@@ -63,12 +57,7 @@ public class AreaChartBuilder implements ChartBuilder {
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
-
-        // Is Stacked
-        boolean isStacked = false;
-
-        int rowLimit = settings.getRowLimit();
-        int seriesLimit = settings.getSeriesLimit();
+        boolean isStacked = false; // Logic stack có thể thêm vào settings nếu cần
 
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) {
@@ -76,38 +65,28 @@ public class AreaChartBuilder implements ChartBuilder {
         }
         List<FilterRule> filters = new ArrayList<>();
         if (root.path("filters").isArray()) {
-            root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
+            root.path("filters").forEach(n -> {
+                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
+            });
         }
-
         if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 1. AGGREGATE DATA
-        List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
-        if (chartData == null) chartData = new ArrayList<>();
+        // --- SỬ DỤNG PROCESSOR MỚI ---
+        List<MapDataItem> chartData = dataProcessor.processFullPipeline(rawData, metrics, filters, settings);
+        // ------------------------------
 
-        // 2. SMART METRIC LIMIT
-        dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
-
-        // 3. SORT DATE
+        // SORT DATE RIÊNG CHO AREA CHART
         if (isDateColumn(chartData, xAxisField)) {
             chartData.sort(Comparator.comparing(item -> parseDateSortable(item.getValue(xAxisField))));
         }
 
-        // 4. PROCESS DATA (ROW LIMIT)
-        dataProcessor.applyHeadLimit(chartData, rowLimit);
-        dataProcessor.processContributionOnly(chartData, metrics, settings);
-
-        // SMART LAYERING (SẮP XẾP LỚP VẼ)
+        // SMART LAYERING (SẮP XẾP LỚP VẼ ĐỂ KHÔNG BỊ CHE)
         if (!isStacked) {
-            // Tính tổng volume trước để tránh tính đi tính lại trong comparator
             Map<String, Double> volumeMap = new HashMap<>();
             for (MetricConfig m : metrics) {
                 double sum = chartData.stream().mapToDouble(i -> getVal(i, m.getLabel())).sum();
                 volumeMap.put(m.getLabel(), sum);
             }
-
-            // Sort Metric
             metrics.sort((m1, m2) -> {
                 Double v1 = volumeMap.getOrDefault(m1.getLabel(), 0.0);
                 Double v2 = volumeMap.getOrDefault(m2.getLabel(), 0.0);
@@ -115,7 +94,6 @@ public class AreaChartBuilder implements ChartBuilder {
             });
         }
 
-        // 5. BUILD UI CONTAINER
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xAxisField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -147,16 +125,12 @@ public class AreaChartBuilder implements ChartBuilder {
         chart.addXAxis(new XAxis().withName(xAxisField).withType(AxisType.CATEGORY));
         chart.addYAxis(new YAxis().withType(AxisType.VALUE));
 
-        // Vẽ Series
         for (MetricConfig m : metrics) {
             LineSeries s = new LineSeries();
             s.setName(m.getLabel());
             s.setSmooth(0.5);
             s.setConnectNulls(true);
-
-            // [FIX 3] CẤU HÌNH STYLE
             LineSeries.AreaStyle areaStyle = new LineSeries.AreaStyle();
-
             if (isStacked) {
                 s.setStack("total");
                 areaStyle.setOpacity(0.7);
@@ -165,24 +139,19 @@ public class AreaChartBuilder implements ChartBuilder {
                 areaStyle.setOpacity(0.5);
             }
             s.setAreaStyle(areaStyle);
-
             Encode encode = new Encode();
             encode.setX(xAxisField);
             encode.setY(m.getLabel());
             s.setEncode(encode);
-
             chart.addSeries(s);
         }
         chart.withLegend(new Legend());
-
-        // Tooltip hiển thị cả giá trị để dễ so sánh
         Tooltip tooltip = new Tooltip().withTrigger(AbstractTooltip.Trigger.AXIS);
         chart.withTooltip(tooltip);
 
         return chart;
     }
 
-    // Helper
     private double getVal(MapDataItem item, String key) {
         Object v = item.getValue(key);
         return v instanceof Number ? ((Number) v).doubleValue() : 0.0;

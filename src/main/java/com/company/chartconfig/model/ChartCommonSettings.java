@@ -74,4 +74,52 @@ public class ChartCommonSettings {
     public boolean isForceCategorical() { return forceCategorical; }
     public String getXAxisSortBy() { return xAxisSortBy; }
     public boolean isXAxisSortAsc() { return xAxisSortAsc; }
+
+    public void setxAxisField(String xAxisField) {
+        this.xAxisField = xAxisField;
+    }
+
+    public void setDimensionField(String dimensionField) {
+        this.dimensionField = dimensionField;
+    }
+
+    public void setSeriesLimit(int seriesLimit) {
+        this.seriesLimit = seriesLimit;
+    }
+
+    public void setRowLimit(int rowLimit) {
+        this.rowLimit = rowLimit;
+    }
+
+    public void setContributionMode(ContributionMode contributionMode) {
+        this.contributionMode = contributionMode;
+    }
+
+    public void setTimeGrain(TimeGrain timeGrain) {
+        this.timeGrain = timeGrain;
+    }
+
+    public void setDonut(boolean donut) {
+        isDonut = donut;
+    }
+
+    public void setQuerySortMetric(MetricConfig querySortMetric) {
+        this.querySortMetric = querySortMetric;
+    }
+
+    public void setQuerySortDesc(boolean querySortDesc) {
+        this.querySortDesc = querySortDesc;
+    }
+
+    public void setForceCategorical(boolean forceCategorical) {
+        this.forceCategorical = forceCategorical;
+    }
+
+    public void setxAxisSortBy(String xAxisSortBy) {
+        this.xAxisSortBy = xAxisSortBy;
+    }
+
+    public void setxAxisSortAsc(boolean xAxisSortAsc) {
+        this.xAxisSortAsc = xAxisSortAsc;
+    }
 }

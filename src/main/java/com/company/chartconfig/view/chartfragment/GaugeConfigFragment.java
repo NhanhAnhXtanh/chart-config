@@ -111,7 +111,17 @@ public class GaugeConfigFragment extends Fragment<VerticalLayout> implements Cha
 
     @Override
     public void setColumnTypes(Map<String, String> types) {
-        this.fieldsTypeMap = types != null ? types : new HashMap<>();
+        // [QUAN TRỌNG] Không được gán map mới (this.fieldsTypeMap = ...),
+        // vì DropZone đang giữ tham chiếu cũ. Phải xóa nội dung và thêm mới.
+        this.fieldsTypeMap.clear();
+        if (types != null) {
+            this.fieldsTypeMap.putAll(types);
+        }
+
+        // Cập nhật lại UI Filter để nó nhận type mới (để biết hiện Date Picker hay Number input)
+        if (filtersDrop != null) {
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
+        }
     }
 
     @Override

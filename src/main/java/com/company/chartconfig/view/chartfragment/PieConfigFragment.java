@@ -105,8 +105,25 @@ public class PieConfigFragment extends Fragment<VerticalLayout> implements Chart
     }
 
     // ... Boilerplate ...
-    @Override public void setAvailableFields(List<String> fields) { if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string")); if (metricDrop != null) DropZoneUtils.updateMetricVisuals(metricDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI); }
-    @Override public void setColumnTypes(Map<String, String> types) { this.fieldsTypeMap = types != null ? types : new HashMap<>(); }
+    @Override
+    public void setColumnTypes(Map<String, String> types) {
+        // [QUAN TRỌNG] Không được gán map mới (this.fieldsTypeMap = ...),
+        // vì DropZone đang giữ tham chiếu cũ. Phải xóa nội dung và thêm mới.
+        this.fieldsTypeMap.clear();
+        if (types != null) {
+            this.fieldsTypeMap.putAll(types);
+        }
+
+        // Cập nhật lại UI Filter để nó nhận type mới (để biết hiện Date Picker hay Number input)
+        if (filtersDrop != null) {
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
+        }
+    }
+
+    @Override public void setAvailableFields(List<String> fields) {
+        if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string"));
+        if (metricDrop != null) DropZoneUtils.updateMetricVisuals(metricDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
+    }
     @Override public boolean isValid() { return dimension != null && !metrics.isEmpty(); }
     @Override public String getMainDimension() { return dimension; }
     @Override public void setMainDimension(String f) { dimension = f; pieSettingsDc.getItem().setValue("dimension", f); if (dimensionDrop != null) refreshUI(); }

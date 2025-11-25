@@ -3,8 +3,6 @@ package com.company.chartconfig.service.builder;
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.enums.ContributionMode;
 import com.company.chartconfig.model.ChartCommonSettings;
-import com.company.chartconfig.service.aggregator.ChartDataAggregator;
-import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
 import com.company.chartconfig.utils.ChartFormatterUtils;
 import com.company.chartconfig.utils.FilterRule;
@@ -16,17 +14,16 @@ import io.jmix.chartsflowui.data.ContainerChartItems;
 import io.jmix.chartsflowui.data.item.EntityDataItem;
 import io.jmix.chartsflowui.data.item.MapDataItem;
 import io.jmix.chartsflowui.kit.component.model.DataSet;
+import io.jmix.chartsflowui.kit.component.model.Grid;
 import io.jmix.chartsflowui.kit.component.model.Tooltip;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisLabel;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisType;
+import io.jmix.chartsflowui.kit.component.model.axis.HasAxisName;
 import io.jmix.chartsflowui.kit.component.model.axis.XAxis;
 import io.jmix.chartsflowui.kit.component.model.axis.YAxis;
-import io.jmix.chartsflowui.kit.component.model.Grid;
-import io.jmix.chartsflowui.kit.component.model.axis.*;
 import io.jmix.chartsflowui.kit.component.model.legend.Legend;
 import io.jmix.chartsflowui.kit.component.model.series.BarSeries;
 import io.jmix.chartsflowui.kit.component.model.series.Encode;
-import io.jmix.chartsflowui.kit.component.model.series.SeriesType;
 import io.jmix.chartsflowui.kit.component.model.shared.AbstractTooltip;
 import io.jmix.core.DataManager;
 import io.jmix.core.entity.KeyValueEntity;
@@ -46,19 +43,17 @@ public class BarChartBuilder implements ChartBuilder {
 
     private final UiComponents uiComponents;
     private final ObjectMapper objectMapper;
-    private final ChartDataAggregator aggregator;
     private final DataComponents dataComponents;
-    private final ChartDataFilter dataFilter;
+    // Bỏ Filter & Aggregator trực tiếp, dùng Processor
     private final ChartDataProcessor dataProcessor;
     @Autowired
     protected DataManager dataManager;
 
-    public BarChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, ChartDataAggregator aggregator, DataComponents dataComponents, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
+    public BarChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper,
+                           DataComponents dataComponents, ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
-        this.aggregator = aggregator;
         this.dataComponents = dataComponents;
-        this.dataFilter = dataFilter;
         this.dataProcessor = dataProcessor;
     }
 
@@ -72,82 +67,26 @@ public class BarChartBuilder implements ChartBuilder {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xField = settings.getXAxisField();
 
-        // Lấy giới hạn
-        int rowLimit = settings.getRowLimit();       // Giới hạn số dòng (Top N Rows)
-        int seriesLimit = settings.getSeriesLimit(); // Giới hạn số lượng Metrics (Columns)
-
         List<MetricConfig> metrics = new ArrayList<>();
-        if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> {
-            try {
-                metrics.add(objectMapper.treeToValue(n, MetricConfig.class));
-            } catch (Exception e) {
-            }
-        });
+        if (root.path("metrics").isArray()) {
+            root.path("metrics").forEach(n -> {
+                try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {}
+            });
+        }
         List<FilterRule> filters = new ArrayList<>();
-        if (root.path("filters").isArray()) root.path("filters").forEach(n -> {
-            try {
-                filters.add(objectMapper.treeToValue(n, FilterRule.class));
-            } catch (Exception e) {
-            }
-        });
+        if (root.path("filters").isArray()) {
+            root.path("filters").forEach(n -> {
+                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
+            });
+        }
 
         if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
-        List<FilterRule> whereRules = new ArrayList<>();   // Lọc thô (Dimension)
-        List<FilterRule> havingRules = new ArrayList<>();  // Lọc tổng (Metric)
 
-        for (FilterRule rule : filters) {
-            // Kiểm tra xem cột trong filter có nằm trong danh sách Metric không
-            boolean isMetricFilter = metrics.stream()
-                    .anyMatch(m -> m.getColumn().equals(rule.getColumn()));
+        // --- SỬ DỤNG PROCESSOR MỚI ---
+        List<MapDataItem> chartData = dataProcessor.processFullPipeline(rawData, metrics, filters, settings);
+        // ------------------------------
 
-            if (isMetricFilter) {
-                // Nếu là cột Metric (vd: doanhThu) -> Đưa vào HAVING để xử lý sau
-                havingRules.add(rule);
-            } else {
-                // Nếu là cột Dimension (vd: tenPhongBan, nam) -> Đưa vào WHERE để lọc ngay
-                whereRules.add(rule);
-            }
-        }
-
-        // BƯỚC 2: Lọc dữ liệu thô (Chỉ áp dụng WHERE rules)
-        // Dữ liệu thô của 'doanhThu' sẽ được giữ nguyên để tính tổng cho đúng
-        List<MapDataItem> processedData = dataFilter.filter(rawData, whereRules);
-
-        // BƯỚC 3: Tính toán tổng hợp (Aggregation)
-        List<MapDataItem> chartData = aggregator.aggregate(processedData, metrics, settings);
-        if (chartData == null) chartData = new ArrayList<>();
-
-        // BƯỚC 4: Lọc dữ liệu sau tính toán (HAVING logic)
-        if (!havingRules.isEmpty() && !chartData.isEmpty()) {
-            List<FilterRule> finalHavingRules = new ArrayList<>();
-
-            for (FilterRule rule : havingRules) {
-                // Tìm MetricConfig tương ứng để lấy Label (VD: đổi "doanhThu" thành "SUM(doanhThu)")
-                MetricConfig targetMetric = metrics.stream()
-                        .filter(m -> m.getColumn().equals(rule.getColumn()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (targetMetric != null) {
-                    // Tạo rule mới áp dụng lên kết quả tính toán
-                    finalHavingRules.add(new FilterRule(
-                            targetMetric.getLabel(), // Key trong chartData là Label (SUM(...))
-                            rule.getOperator(),
-                            rule.getValue()
-                    ));
-                }
-            }
-
-            // Áp dụng lọc lần cuối
-            chartData = dataFilter.filter(chartData, finalHavingRules);
-        }
-        // 2. Sort (Sort DESC theo metric đầu tiên để lấy Top N nếu chưa có sort)
-        if (settings.getQuerySortMetric() == null && !metrics.isEmpty()) {
-            String sortKey = metrics.get(0).getLabel();
-            chartData.sort((o1, o2) -> Double.compare(getDouble(o2, sortKey), getDouble(o1, sortKey)));
-        }
-
-        // 3. Visual Sort (X-Axis Sort)
+        // 3. Visual Sort (X-Axis Sort) - Logic riêng của Bar Chart
         String xAxisSortBy = settings.getXAxisSortBy();
         if (xAxisSortBy != null && !xAxisSortBy.isEmpty()) {
             boolean isMetric = metrics.stream().anyMatch(m -> m.getLabel().equals(xAxisSortBy));
@@ -162,78 +101,55 @@ public class BarChartBuilder implements ChartBuilder {
                     return v != null ? v.toString() : "";
                 }));
             }
-
             if (!settings.isXAxisSortAsc()) {
                 Collections.reverse(chartData);
             }
         }
 
-        // 5. XỬ LÝ ROW LIMIT (HEAD LIMIT - Lấy Top N dòng đầu tiên)
-        dataProcessor.applyHeadLimit(chartData, rowLimit);
-
-        // 6. Tính % Contribution
-        dataProcessor.processContributionOnly(chartData, metrics, settings);
-
-        // --- 6. BUILD CHART UI (Giữ nguyên như cũ) ---
-
+        // --- BUILD CHART UI ---
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
-
-        // Add property cho Category (luôn là String để an toàn hiển thị)
         container.addProperty(xField, String.class);
-
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
 
         List<KeyValueEntity> entities = new ArrayList<>();
         for (MapDataItem item : chartData) {
             KeyValueEntity kv = dataManager.create(KeyValueEntity.class);
-
-            // --- [FIX QUAN TRỌNG] ---
             Object rawCat = item.getValue(xField);
-            String safeCat = (rawCat != null) ? rawCat.toString() : "Unknown"; // Không bao giờ để null
+            String safeCat = (rawCat != null) ? rawCat.toString() : "Unknown";
             kv.setValue(xField, safeCat);
-            // ------------------------
-
             for (MetricConfig m : metrics) kv.setValue(m.getLabel(), item.getValue(m.getLabel()));
             entities.add(kv);
         }
         container.setItems(entities);
 
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%");
-        chart.setHeight("100%");
+        chart.setWidth("100%"); chart.setHeight("100%");
 
-        // Grid: ContainLabel=true để không mất chữ
         Grid grid = new Grid();
         grid.setContainLabel(true);
-        grid.setBottom("10%"); // Đẩy lên 1 chút
+        grid.setBottom("10%");
         chart.withGrid(grid);
 
         String[] valFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
-
         DataSet dataSet = new DataSet().withSource(
                 new DataSet.Source<EntityDataItem>()
                         .withDataProvider(new ContainerChartItems<>(container))
-                        .withCategoryField(xField) // Mapping đúng trường category
+                        .withCategoryField(xField)
                         .withValueFields(valFields)
         );
         chart.setDataSet(dataSet);
 
-        // X-Axis
         XAxis xAxis = new XAxis()
                 .withName(xField)
                 .withNameLocation(HasAxisName.NameLocation.CENTER)
-                .withNameGap(35);
-
-        // Bar Chart bắt buộc dùng CATEGORY cho trục X để hiển thị tên cột
-        xAxis.withType(AxisType.CATEGORY);
-
+                .withNameGap(35)
+                .withType(AxisType.CATEGORY);
         AxisLabel xAxisLabel = new AxisLabel();
         xAxisLabel.setInterval(0);
         xAxisLabel.setFormatterFunction("function(value) { return value; }");
         xAxis.setAxisLabel(xAxisLabel);
         chart.addXAxis(xAxis);
 
-        // Y-Axis
         YAxis yAxis = new YAxis().withType(AxisType.VALUE);
         AxisLabel yAxisLabel = new AxisLabel();
         if (settings.getContributionMode() != ContributionMode.NONE) yAxisLabel.setFormatter("{value} %");
@@ -241,15 +157,13 @@ public class BarChartBuilder implements ChartBuilder {
         yAxis.setAxisLabel(yAxisLabel);
         chart.addYAxis(yAxis);
 
-        // Series
         for (MetricConfig m : metrics) {
             BarSeries s = new BarSeries();
             s.setName(m.getLabel());
             if (settings.getContributionMode() == ContributionMode.ROW) s.setStack("total");
-
             Encode encode = new Encode();
-            encode.setX(xField);     // Map trục X
-            encode.setY(m.getLabel()); // Map trục Y
+            encode.setX(xField);
+            encode.setY(m.getLabel());
             s.setEncode(encode);
             chart.addSeries(s);
         }
@@ -260,7 +174,6 @@ public class BarChartBuilder implements ChartBuilder {
         chart.withLegend(legend);
 
         Tooltip tooltip = new Tooltip();
-
         tooltip.setTrigger(AbstractTooltip.Trigger.AXIS);
         if (settings.getContributionMode() != ContributionMode.NONE)
             tooltip.setValueFormatterFunction("function(value) { return value ? Number(value).toFixed(2) + ' %' : '0 %'; }");
@@ -268,11 +181,5 @@ public class BarChartBuilder implements ChartBuilder {
         chart.withTooltip(tooltip);
 
         return chart;
-    }
-
-    private double getDouble(MapDataItem item, String col) {
-        Object v = item.getValue(col);
-        if (v instanceof Number) return ((Number) v).doubleValue();
-        return 0.0;
     }
 }

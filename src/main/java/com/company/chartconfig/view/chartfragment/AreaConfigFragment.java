@@ -102,8 +102,20 @@ public class AreaConfigFragment extends Fragment<VerticalLayout> implements Char
     }
 
     @Override public void setAvailableFields(List<String> fields) { if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string")); if(metricsDrop!=null) DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI); }
-    @Override public void setColumnTypes(Map<String, String> types) { this.fieldsTypeMap = types != null ? types : new HashMap<>(); }
-    @Override public boolean isValid() { return xAxis != null && !metrics.isEmpty(); }
+    @Override
+    public void setColumnTypes(Map<String, String> types) {
+        // [QUAN TRỌNG] Không được gán map mới (this.fieldsTypeMap = ...),
+        // vì DropZone đang giữ tham chiếu cũ. Phải xóa nội dung và thêm mới.
+        this.fieldsTypeMap.clear();
+        if (types != null) {
+            this.fieldsTypeMap.putAll(types);
+        }
+
+        // Cập nhật lại UI Filter để nó nhận type mới (để biết hiện Date Picker hay Number input)
+        if (filtersDrop != null) {
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
+        }
+    }    @Override public boolean isValid() { return xAxis != null && !metrics.isEmpty(); }
     @Override public String getMainDimension() { return xAxis; }
     @Override public void setMainDimension(String f) { xAxis = f; areaSettingsDc.getItem().setValue("xAxis", f); if(xDrop!=null) refreshUI(); }
     @Override public String getMainMetric() { return metrics.isEmpty() ? null : metrics.get(0).getColumn(); }

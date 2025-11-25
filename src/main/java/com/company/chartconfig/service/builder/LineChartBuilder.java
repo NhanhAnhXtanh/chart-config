@@ -2,8 +2,6 @@ package com.company.chartconfig.service.builder;
 
 import com.company.chartconfig.enums.ChartType;
 import com.company.chartconfig.model.ChartCommonSettings;
-import com.company.chartconfig.service.aggregator.ChartDataAggregator;
-import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
 import com.company.chartconfig.utils.ChartFormatterUtils;
 import com.company.chartconfig.utils.FilterRule;
@@ -40,17 +38,13 @@ public class LineChartBuilder implements ChartBuilder {
     private final UiComponents uiComponents;
     private final ObjectMapper objectMapper;
     private final DataComponents dataComponents;
-    private final ChartDataAggregator aggregator;
-    private final ChartDataFilter dataFilter;
     private final ChartDataProcessor dataProcessor;
 
     public LineChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, DataComponents dataComponents,
-                            ChartDataAggregator aggregator, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
+                            ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
         this.objectMapper = objectMapper;
         this.dataComponents = dataComponents;
-        this.aggregator = aggregator;
-        this.dataFilter = dataFilter;
         this.dataProcessor = dataProcessor;
     }
 
@@ -63,48 +57,30 @@ public class LineChartBuilder implements ChartBuilder {
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xAxisField = settings.getXAxisField();
-        int rowLimit = settings.getRowLimit();
-        int seriesLimit = settings.getSeriesLimit();
 
         List<MetricConfig> metrics = new ArrayList<>();
         if (root.path("metrics").isArray()) {
-            root.path("metrics").forEach(n -> {
-                try {
-                    metrics.add(objectMapper.treeToValue(n, MetricConfig.class));
-                } catch (Exception e) {
-                }
-            });
+            root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
         }
         List<FilterRule> filters = new ArrayList<>();
         if (root.path("filters").isArray()) {
             root.path("filters").forEach(n -> {
-                try {
-                    filters.add(objectMapper.treeToValue(n, FilterRule.class));
-                } catch (Exception e) {
-                }
+                try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {}
             });
         }
 
         if (xAxisField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
 
-        // 1. AGGREGATE (Tính toán trước)
-        List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
-        if (chartData == null) chartData = new ArrayList<>();
+        // --- SỬ DỤNG PROCESSOR MỚI ---
+        List<MapDataItem> chartData = dataProcessor.processFullPipeline(rawData, metrics, filters, settings);
+        // ------------------------------
 
-        // 2. SMART METRIC LIMIT (Giữ lại Top N Metric lớn nhất dựa trên data thực tế)
-        dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
-
-        // 3. SORT DATE
+        // SORT DATE RIÊNG CHO LINE CHART (Nếu trục X là ngày tháng thì nên sort theo thời gian)
         if (isDateColumn(chartData, xAxisField)) {
             chartData.sort(Comparator.comparing(item -> parseDateSortable(item.getValue(xAxisField))));
         }
 
-        // 4. ROW LIMIT
-        dataProcessor.applyHeadLimit(chartData, rowLimit);
-        dataProcessor.processContributionOnly(chartData, metrics, settings);
-
-        // 5. BUILD UI
+        // BUILD UI
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
         container.addProperty(xAxisField, String.class);
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
@@ -122,8 +98,7 @@ public class LineChartBuilder implements ChartBuilder {
         container.setItems(entities);
 
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%");
-        chart.setHeight("100%");
+        chart.setWidth("100%"); chart.setHeight("100%");
 
         String[] valFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
         DataSet dataSet = new DataSet().withSource(
@@ -151,12 +126,10 @@ public class LineChartBuilder implements ChartBuilder {
             s.setName(m.getLabel());
             s.setSmooth(0.5);
             s.setConnectNulls(true);
-
             Encode encode = new Encode();
             encode.setX(xAxisField);
             encode.setY(m.getLabel());
             s.setEncode(encode);
-
             chart.addSeries(s);
         }
         chart.withLegend(new Legend());
@@ -168,7 +141,6 @@ public class LineChartBuilder implements ChartBuilder {
         return chart;
     }
 
-    // HELPER METHODS
     private boolean isDateColumn(List<MapDataItem> data, String field) {
         if (data == null || data.isEmpty()) return false;
         Object v = data.get(0).getValue(field);
@@ -181,10 +153,6 @@ public class LineChartBuilder implements ChartBuilder {
         String s = val.toString().trim().split(" ")[0];
         String clean = s.replace("-", "/").replace(".", "/");
         if (clean.matches("^\\d{4}/.*")) return clean;
-        try {
-            return new java.text.SimpleDateFormat("dd/MM/yyyy").parse(clean);
-        } catch (Exception e) {
-            return s;
-        }
+        try { return new java.text.SimpleDateFormat("dd/MM/yyyy").parse(clean); } catch (Exception e) { return s; }
     }
 }

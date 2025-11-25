@@ -124,8 +124,20 @@ public class LineConfigFragment extends Fragment<VerticalLayout> implements Char
 
     // ... Boilerplate ...
     @Override public void setAvailableFields(List<String> fields) { if (fieldsTypeMap.isEmpty() && fields != null) fields.forEach(f -> fieldsTypeMap.put(f, "string")); if (metricsDrop != null) DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI); }
-    @Override public void setColumnTypes(Map<String, String> types) { this.fieldsTypeMap = types != null ? types : new HashMap<>(); }
-    @Override public boolean isValid() { return xAxis != null && !xAxis.isBlank() && !metrics.isEmpty(); }
+    @Override
+    public void setColumnTypes(Map<String, String> types) {
+        // 1. Giữ nguyên tham chiếu object map, chỉ thay đổi nội dung bên trong
+        this.fieldsTypeMap.clear();
+        if (types != null) {
+            this.fieldsTypeMap.putAll(types);
+        }
+
+        // 3. (Tuỳ chọn) Cập nhật lại UI các filter hiện có nếu cần thiết
+        // Để đảm bảo nếu đang có filter cũ thì khi bấm Edit nó nhận đúng Type mới
+        if (filtersDrop != null) {
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
+        }
+    }    @Override public boolean isValid() { return xAxis != null && !xAxis.isBlank() && !metrics.isEmpty(); }
     @Override public String getMainDimension() { return xAxis; }
     @Override public void setMainDimension(String f) { xAxis = f; if (lineSettingsDc.getItemOrNull() != null) lineSettingsDc.getItem().setValue("xAxis", f); if (xDrop != null) refreshUI(); }
     @Override public String getMainMetric() { return metrics.isEmpty() ? null : metrics.get(0).getColumn(); }

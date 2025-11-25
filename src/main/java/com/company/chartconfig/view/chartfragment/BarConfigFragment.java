@@ -101,7 +101,7 @@ public class BarConfigFragment extends Fragment<VerticalLayout> implements Chart
         });
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
         DropZoneUtils.setupMulti(dimensionsDrop, dimensions);
-        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
+            DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
         DropZoneUtils.setupSingleMetricZone(querySortDrop, querySortMetric, new ArrayList<>(fieldsTypeMap.keySet()),
                 (cfg) -> { this.querySortMetric = cfg; refreshUI(); },
                 () -> { this.querySortMetric = null; refreshUI(); }
