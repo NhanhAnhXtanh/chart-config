@@ -48,7 +48,7 @@ public class GaugeConfigFragment extends Fragment<VerticalLayout> implements Cha
 
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {
         });
-        DropZoneUtils.setupFilter(filtersDrop, filters);
+        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
         refreshUI();
     }
 
@@ -56,7 +56,7 @@ public class GaugeConfigFragment extends Fragment<VerticalLayout> implements Cha
         if (metricsDrop != null) {
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {
             });
-            DropZoneUtils.updateFilters(filtersDrop, filters);
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
         }
     }
 

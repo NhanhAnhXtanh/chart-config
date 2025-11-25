@@ -57,7 +57,7 @@ public class AreaConfigFragment extends Fragment<VerticalLayout> implements Char
 
         DropZoneUtils.setup(xDrop, v -> { xAxis = v; areaSettingsDc.getItem().setValue("xAxis", v); });
         DropZoneUtils.setupMetricZone(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), this::refreshUI);
-        DropZoneUtils.setupFilter(filtersDrop, filters);
+        DropZoneUtils.setupFilter(filtersDrop, filters, fieldsTypeMap);
         refreshUI();
     }
 
@@ -65,7 +65,7 @@ public class AreaConfigFragment extends Fragment<VerticalLayout> implements Char
         if (xDrop != null) {
             DropZoneUtils.updateVisuals(xDrop, xAxis, v -> { xAxis = v; areaSettingsDc.getItem().setValue("xAxis", v); });
             DropZoneUtils.updateMetricVisuals(metricsDrop, metrics, new ArrayList<>(fieldsTypeMap.keySet()), () -> {});
-            DropZoneUtils.updateFilters(filtersDrop, filters);
+            DropZoneUtils.updateFilters(filtersDrop, filters, fieldsTypeMap);
         }
     }
 

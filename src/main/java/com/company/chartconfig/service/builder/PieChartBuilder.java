@@ -5,6 +5,7 @@ import com.company.chartconfig.model.ChartCommonSettings;
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
+import com.company.chartconfig.utils.ChartFormatterUtils;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -149,8 +150,13 @@ public class PieChartBuilder implements ChartBuilder {
 
         // --- TOOLTIP ---
         Tooltip tooltip = new Tooltip();
+        tooltip.setTrigger(io.jmix.chartsflowui.kit.component.model.shared.AbstractTooltip.Trigger.ITEM);
 
-        tooltip.setFormatter("{b}");
+        // 1. Định dạng tổng thể: Tên: Giá trị (Phần trăm)
+        tooltip.setFormatter("{b}: {c} ({d}%)");
+
+        // 2. Định dạng riêng cho phần Giá trị {c} -> Dùng hàm từ Utils để có dấu phẩy
+        tooltip.setValueFormatterFunction(ChartFormatterUtils.getTooltipNumberFormatter());
 
         chart.withTooltip(tooltip);
 

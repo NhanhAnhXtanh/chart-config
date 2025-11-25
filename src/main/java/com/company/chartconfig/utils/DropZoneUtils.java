@@ -1,17 +1,26 @@
 package com.company.chartconfig.utils;
 
 import com.company.chartconfig.view.common.MetricConfig;
+import com.company.chartconfig.view.dialog.FilterEditorDialog;
 import com.company.chartconfig.view.dialog.MetricConfigDialog;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.dnd.DropTarget;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class DropZoneUtils {
@@ -140,24 +149,53 @@ public class DropZoneUtils {
         else { zone.addClassName("filled"); list.forEach(v -> zone.add(createChip(v, ()->{list.remove(v); updateMulti(zone,list);}, null))); }
     }
 
-    public static void setupFilter(Div zone, List<com.company.chartconfig.utils.FilterRule> filters) {
+    public static void setupFilter(Div zone, List<FilterRule> filters, Map<String, String> typesMap) {
         setupCommonEvents(zone);
         DropTarget<Div> dropTarget = DropTarget.configure(zone);
         dropTarget.setActive(true);
+
         dropTarget.addDropListener(e -> e.getDragSourceComponent().ifPresent(src -> {
             String col = src.getElement().getAttribute("data-field-name");
-            if (col != null) openFilterEditor(zone, filters, col);
+            if (col != null) {
+                String type = typesMap != null ? typesMap.getOrDefault(col, "string") : "string";
+
+                // --- GỌI DIALOG MỚI Ở ĐÂY ---
+                new FilterEditorDialog(null, col, type, rule -> {
+                    filters.add(rule);
+                    updateFilters(zone, filters, typesMap);
+                }).open();
+            }
         }));
-        updateFilters(zone, filters);
+        updateFilters(zone, filters, typesMap);
     }
 
-    public static void updateFilters(Div zone, List<com.company.chartconfig.utils.FilterRule> filters) {
+    public static void updateFilters(Div zone, List<FilterRule> filters, Map<String, String> typesMap) {
         zone.removeAll();
-        if (filters.isEmpty()) renderEmptyState(zone, "Kéo thả Filter");
-        else { zone.addClassName("filled"); filters.forEach(f -> {
-            String label = f.column() + " " + f.operator() + " " + f.value();
-            zone.add(createChip(label, ()->{filters.remove(f); updateFilters(zone,filters);}, null));
-        }); }
+        if (filters.isEmpty()) {
+            renderEmptyState(zone, "Kéo thả Filter");
+        } else {
+            zone.addClassName("filled");
+            for (FilterRule f : filters) {
+                // Hiển thị text thông minh hơn chút (ẩn null|null nếu có)
+                String displayVal = f.getValue().replace("|", " -> ").replace("null", "∞");
+                String label = f.getColumn() + " " + f.getOperator() + " " + displayVal;
+
+                String type = typesMap != null ? typesMap.getOrDefault(f.getColumn(), "string") : "string";
+
+                Runnable onDelete = () -> {
+                    filters.remove(f);
+                    updateFilters(zone, filters, typesMap);
+                };
+
+                // --- GỌI DIALOG MỚI KHI CLICK EDIT ---
+                Runnable onEdit = () -> new FilterEditorDialog(f, f.getColumn(), type, rule -> {
+                    updateFilters(zone, filters, typesMap);
+                }).open();
+
+                Span chip = createChip(label, onDelete, onEdit);
+                zone.add(chip);
+            }
+        }
     }
 
     private static Span createChip(String text, Runnable onDeleteAction, Runnable onClickAction) {
@@ -194,19 +232,4 @@ public class DropZoneUtils {
         zone.getElement().addEventListener("drop", e -> zone.removeClassName("drag-over"));
     }
 
-    private static void openFilterEditor(Div zone, List<com.company.chartconfig.utils.FilterRule> list, String column) {
-        Dialog dialog = new Dialog();
-        TextField valueField = new TextField("Value");
-        ComboBox<String> operator = new ComboBox<>("Operator");
-        operator.setItems("=", "!=", ">", "<", "LIKE", "IN");
-        operator.setValue("=");
-        com.vaadin.flow.component.button.Button ok = new com.vaadin.flow.component.button.Button("Apply", ev -> {
-            list.add(new com.company.chartconfig.utils.FilterRule(column, operator.getValue(), valueField.getValue()));
-            dialog.close();
-            updateFilters(zone, list);
-        });
-        ok.addThemeName("primary");
-        dialog.add(new H3("Filter: "+column), operator, valueField, ok);
-        dialog.open();
-    }
 }

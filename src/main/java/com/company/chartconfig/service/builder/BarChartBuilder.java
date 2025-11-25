@@ -6,6 +6,7 @@ import com.company.chartconfig.model.ChartCommonSettings;
 import com.company.chartconfig.service.aggregator.ChartDataAggregator;
 import com.company.chartconfig.service.filter.ChartDataFilter;
 import com.company.chartconfig.service.processor.ChartDataProcessor;
+import com.company.chartconfig.utils.ChartFormatterUtils;
 import com.company.chartconfig.utils.FilterRule;
 import com.company.chartconfig.view.common.MetricConfig;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,14 +21,19 @@ import io.jmix.chartsflowui.kit.component.model.axis.AxisLabel;
 import io.jmix.chartsflowui.kit.component.model.axis.AxisType;
 import io.jmix.chartsflowui.kit.component.model.axis.XAxis;
 import io.jmix.chartsflowui.kit.component.model.axis.YAxis;
+import io.jmix.chartsflowui.kit.component.model.Grid;
+import io.jmix.chartsflowui.kit.component.model.axis.*;
 import io.jmix.chartsflowui.kit.component.model.legend.Legend;
 import io.jmix.chartsflowui.kit.component.model.series.BarSeries;
 import io.jmix.chartsflowui.kit.component.model.series.Encode;
 import io.jmix.chartsflowui.kit.component.model.series.SeriesType;
+import io.jmix.chartsflowui.kit.component.model.shared.AbstractTooltip;
+import io.jmix.core.DataManager;
 import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.model.DataComponents;
 import io.jmix.flowui.model.KeyValueCollectionContainer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -37,12 +43,15 @@ import java.util.List;
 
 @Component
 public class BarChartBuilder implements ChartBuilder {
+
     private final UiComponents uiComponents;
     private final ObjectMapper objectMapper;
     private final ChartDataAggregator aggregator;
     private final DataComponents dataComponents;
     private final ChartDataFilter dataFilter;
     private final ChartDataProcessor dataProcessor;
+    @Autowired
+    protected DataManager dataManager;
 
     public BarChartBuilder(UiComponents uiComponents, ObjectMapper objectMapper, ChartDataAggregator aggregator, DataComponents dataComponents, ChartDataFilter dataFilter, ChartDataProcessor dataProcessor) {
         this.uiComponents = uiComponents;
@@ -60,7 +69,6 @@ public class BarChartBuilder implements ChartBuilder {
 
     @Override
     public Chart build(JsonNode root, List<MapDataItem> rawData) {
-        // 1. Parse Settings
         ChartCommonSettings settings = new ChartCommonSettings(root);
         String xField = settings.getXAxisField();
 
@@ -69,27 +77,80 @@ public class BarChartBuilder implements ChartBuilder {
         int seriesLimit = settings.getSeriesLimit(); // Giới hạn số lượng Metrics (Columns)
 
         List<MetricConfig> metrics = new ArrayList<>();
-        if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> { try { metrics.add(objectMapper.treeToValue(n, MetricConfig.class)); } catch (Exception e) {} });
-
+        if (root.path("metrics").isArray()) root.path("metrics").forEach(n -> {
+            try {
+                metrics.add(objectMapper.treeToValue(n, MetricConfig.class));
+            } catch (Exception e) {
+            }
+        });
         List<FilterRule> filters = new ArrayList<>();
-        if (root.path("filters").isArray()) root.path("filters").forEach(n -> { try { filters.add(objectMapper.treeToValue(n, FilterRule.class)); } catch (Exception e) {} });
+        if (root.path("filters").isArray()) root.path("filters").forEach(n -> {
+            try {
+                filters.add(objectMapper.treeToValue(n, FilterRule.class));
+            } catch (Exception e) {
+            }
+        });
 
-        if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin trục X hoặc Metrics");
+        if (xField == null || metrics.isEmpty()) throw new IllegalStateException("Thiếu thông tin");
+        List<FilterRule> whereRules = new ArrayList<>();   // Lọc thô (Dimension)
+        List<FilterRule> havingRules = new ArrayList<>();  // Lọc tổng (Metric)
 
+        for (FilterRule rule : filters) {
+            // Kiểm tra xem cột trong filter có nằm trong danh sách Metric không
+            boolean isMetricFilter = metrics.stream()
+                    .anyMatch(m -> m.getColumn().equals(rule.getColumn()));
 
-        // 2. PIPELINE: Filter -> Aggregate (Tính toán TẤT CẢ metrics trước)
-        List<MapDataItem> filtered = dataFilter.filter(rawData, filters);
-        List<MapDataItem> chartData = aggregator.aggregate(filtered, metrics, settings);
+            if (isMetricFilter) {
+                // Nếu là cột Metric (vd: doanhThu) -> Đưa vào HAVING để xử lý sau
+                havingRules.add(rule);
+            } else {
+                // Nếu là cột Dimension (vd: tenPhongBan, nam) -> Đưa vào WHERE để lọc ngay
+                whereRules.add(rule);
+            }
+        }
+
+        // BƯỚC 2: Lọc dữ liệu thô (Chỉ áp dụng WHERE rules)
+        // Dữ liệu thô của 'doanhThu' sẽ được giữ nguyên để tính tổng cho đúng
+        List<MapDataItem> processedData = dataFilter.filter(rawData, whereRules);
+
+        // BƯỚC 3: Tính toán tổng hợp (Aggregation)
+        List<MapDataItem> chartData = aggregator.aggregate(processedData, metrics, settings);
         if (chartData == null) chartData = new ArrayList<>();
 
-        // 3. SMART METRIC LIMIT (Giữ lại Top N Metric lớn nhất dựa trên data thực tế)
-        dataProcessor.applyMetricLimit(metrics, chartData, seriesLimit);
+        // BƯỚC 4: Lọc dữ liệu sau tính toán (HAVING logic)
+        if (!havingRules.isEmpty() && !chartData.isEmpty()) {
+            List<FilterRule> finalHavingRules = new ArrayList<>();
 
-        // 4. VISUAL SORT (X-AXIS SORT)
+            for (FilterRule rule : havingRules) {
+                // Tìm MetricConfig tương ứng để lấy Label (VD: đổi "doanhThu" thành "SUM(doanhThu)")
+                MetricConfig targetMetric = metrics.stream()
+                        .filter(m -> m.getColumn().equals(rule.getColumn()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (targetMetric != null) {
+                    // Tạo rule mới áp dụng lên kết quả tính toán
+                    finalHavingRules.add(new FilterRule(
+                            targetMetric.getLabel(), // Key trong chartData là Label (SUM(...))
+                            rule.getOperator(),
+                            rule.getValue()
+                    ));
+                }
+            }
+
+            // Áp dụng lọc lần cuối
+            chartData = dataFilter.filter(chartData, finalHavingRules);
+        }
+        // 2. Sort (Sort DESC theo metric đầu tiên để lấy Top N nếu chưa có sort)
+        if (settings.getQuerySortMetric() == null && !metrics.isEmpty()) {
+            String sortKey = metrics.get(0).getLabel();
+            chartData.sort((o1, o2) -> Double.compare(getDouble(o2, sortKey), getDouble(o1, sortKey)));
+        }
+
+        // 3. Visual Sort (X-Axis Sort)
         String xAxisSortBy = settings.getXAxisSortBy();
         if (xAxisSortBy != null && !xAxisSortBy.isEmpty()) {
             boolean isMetric = metrics.stream().anyMatch(m -> m.getLabel().equals(xAxisSortBy));
-
             if (isMetric) {
                 chartData.sort(Comparator.comparingDouble(item -> {
                     Object v = item.getValue(xAxisSortBy);
@@ -116,96 +177,102 @@ public class BarChartBuilder implements ChartBuilder {
         // --- 6. BUILD CHART UI (Giữ nguyên như cũ) ---
 
         KeyValueCollectionContainer container = dataComponents.createKeyValueCollectionContainer();
+
+        // Add property cho Category (luôn là String để an toàn hiển thị)
         container.addProperty(xField, String.class);
+
         for (MetricConfig m : metrics) container.addProperty(m.getLabel(), Double.class);
 
         List<KeyValueEntity> entities = new ArrayList<>();
         for (MapDataItem item : chartData) {
-            KeyValueEntity kv = new KeyValueEntity();
-            kv.setValue(xField, item.getValue(xField));
+            KeyValueEntity kv = dataManager.create(KeyValueEntity.class);
+
+            // --- [FIX QUAN TRỌNG] ---
+            Object rawCat = item.getValue(xField);
+            String safeCat = (rawCat != null) ? rawCat.toString() : "Unknown"; // Không bao giờ để null
+            kv.setValue(xField, safeCat);
+            // ------------------------
+
             for (MetricConfig m : metrics) kv.setValue(m.getLabel(), item.getValue(m.getLabel()));
             entities.add(kv);
         }
         container.setItems(entities);
 
         Chart chart = uiComponents.create(Chart.class);
-        chart.setWidth("100%"); chart.setHeight("100%");
+        chart.setWidth("100%");
+        chart.setHeight("100%");
+
+        // Grid: ContainLabel=true để không mất chữ
+        Grid grid = new Grid();
+        grid.setContainLabel(true);
+        grid.setBottom("10%"); // Đẩy lên 1 chút
+        chart.withGrid(grid);
 
         String[] valFields = metrics.stream().map(MetricConfig::getLabel).toArray(String[]::new);
+
         DataSet dataSet = new DataSet().withSource(
                 new DataSet.Source<EntityDataItem>()
                         .withDataProvider(new ContainerChartItems<>(container))
-                        .withCategoryField(xField)
+                        .withCategoryField(xField) // Mapping đúng trường category
                         .withValueFields(valFields)
         );
         chart.setDataSet(dataSet);
 
-        // --- X-AXIS CONFIG ---
-        XAxis xAxis = new XAxis().withName(xField);
-        if (settings.isForceCategorical()) {
-            xAxis.withType(AxisType.CATEGORY);
-        }
+        // X-Axis
+        XAxis xAxis = new XAxis()
+                .withName(xField)
+                .withNameLocation(HasAxisName.NameLocation.CENTER)
+                .withNameGap(35);
+
+        // Bar Chart bắt buộc dùng CATEGORY cho trục X để hiển thị tên cột
+        xAxis.withType(AxisType.CATEGORY);
+
         AxisLabel xAxisLabel = new AxisLabel();
-        xAxisLabel.setFontSize(10);
         xAxisLabel.setInterval(0);
         xAxisLabel.setFormatterFunction("function(value) { return value; }");
         xAxis.setAxisLabel(xAxisLabel);
         chart.addXAxis(xAxis);
 
-        // --- Y-AXIS CONFIG ---
+        // Y-Axis
         YAxis yAxis = new YAxis().withType(AxisType.VALUE);
         AxisLabel yAxisLabel = new AxisLabel();
-
-        if (settings.getContributionMode() != ContributionMode.NONE) {
-            yAxisLabel.setFormatter("{value} %");
-            if (settings.getContributionMode() == ContributionMode.ROW) yAxis.setMax("100");
-        } else {
-            yAxisLabel.setFormatterFunction(
-                    "function(value) { " +
-                            "   if (Math.abs(value) >= 1000) {" +
-                            "      if (Math.abs(value) >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';" +
-                            "      if (Math.abs(value) >= 1000000) return (value / 1000000).toFixed(1) + 'M';" +
-                            "      if (Math.abs(value) >= 1000) return (value / 1000).toFixed(1) + 'k';" +
-                            "   }" +
-                            "   return value.toLocaleString();" +
-                            "}"
-            );
-        }
+        if (settings.getContributionMode() != ContributionMode.NONE) yAxisLabel.setFormatter("{value} %");
+        else yAxisLabel.setFormatterFunction(ChartFormatterUtils.getUniversalValueFormatter());
         yAxis.setAxisLabel(yAxisLabel);
         chart.addYAxis(yAxis);
 
-        // --- SERIES ---
+        // Series
         for (MetricConfig m : metrics) {
             BarSeries s = new BarSeries();
-            s.setType(SeriesType.BAR);
             s.setName(m.getLabel());
-
-            if (settings.getContributionMode() == ContributionMode.ROW) {
-                s.setStack("total");
-                s.setName(m.getLabel() + " (%)");
-            } else if (settings.getContributionMode() == ContributionMode.SERIES) {
-                s.setName(m.getLabel() + " (%)");
-            }
+            if (settings.getContributionMode() == ContributionMode.ROW) s.setStack("total");
 
             Encode encode = new Encode();
-            encode.setX(xField);
-            encode.setY(m.getLabel());
+            encode.setX(xField);     // Map trục X
+            encode.setY(m.getLabel()); // Map trục Y
             s.setEncode(encode);
             chart.addSeries(s);
         }
 
-        chart.withLegend(new Legend());
+        Legend legend = new Legend();
+        legend.setShow(true);
+        legend.setTop("0");
+        chart.withLegend(legend);
 
         Tooltip tooltip = new Tooltip();
-        tooltip.setTrigger(io.jmix.chartsflowui.kit.component.model.shared.AbstractTooltip.Trigger.AXIS);
 
-        if (settings.getContributionMode() != ContributionMode.NONE) {
+        tooltip.setTrigger(AbstractTooltip.Trigger.AXIS);
+        if (settings.getContributionMode() != ContributionMode.NONE)
             tooltip.setValueFormatterFunction("function(value) { return value ? Number(value).toFixed(2) + ' %' : '0 %'; }");
-        } else {
-            tooltip.setValueFormatterFunction("function(value) { return value ? Number(value).toLocaleString() : '0'; }");
-        }
+        else tooltip.setValueFormatterFunction(ChartFormatterUtils.getTooltipNumberFormatter());
         chart.withTooltip(tooltip);
 
         return chart;
+    }
+
+    private double getDouble(MapDataItem item, String col) {
+        Object v = item.getValue(col);
+        if (v instanceof Number) return ((Number) v).doubleValue();
+        return 0.0;
     }
 }
